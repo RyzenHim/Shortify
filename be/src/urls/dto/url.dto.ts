@@ -1,5 +1,27 @@
 import { z } from 'zod';
 
+const normalizeUrl = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+};
+
+const urlField = z.preprocess(
+  normalizeUrl,
+  z.string().url('Enter a valid URL'),
+);
+
 const optionalString = (schema: z.ZodString) =>
   z.preprocess(
     (value) => (value === '' || value === undefined ? undefined : value),
@@ -17,17 +39,17 @@ const shortCodeSchema = z
   );
 
 export const createUrlSchema = z.object({
-  originalUrl: z.string().url('Enter a valid URL'),
+  originalUrl: urlField,
   title: optionalString(z.string().trim().max(80)),
   customCode: optionalString(shortCodeSchema),
 });
 
 export const createGuestUrlSchema = z.object({
-  originalUrl: z.string().url('Enter a valid URL'),
+  originalUrl: urlField,
 });
 
 export const updateUrlSchema = z.object({
-  originalUrl: z.string().url('Enter a valid URL').optional(),
+  originalUrl: urlField.optional(),
   title: optionalString(z.string().trim().max(80)),
   isActive: z.boolean().optional(),
   resetClicks: z.boolean().optional(),

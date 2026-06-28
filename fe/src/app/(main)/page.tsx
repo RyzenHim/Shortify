@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -17,18 +17,61 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { createGuestUrl } from "@/features/urls/urlApi";
+import { createGuestUrl, createUrl } from "@/features/urls/urlApi";
 import { getApiMessage } from "@/lib/api";
-import type { ShortUrl } from "@/lib/types";
+import type { PaginatedUrls, ShortUrl } from "@/lib/types";
+import { normalizeUrlInput } from "@/lib/urlValidation";
+import { useAppSelector } from "@/store/hooks";
 
 export default function Home() {
   const [link, setLink] = useState("");
   const [shortUrl, setShortUrl] = useState<ShortUrl | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const accessToken = useAppSelector((state) => state.auth.accessToken);
   const mutation = useMutation({
-    mutationFn: createGuestUrl,
+    mutationFn: async (input: { originalUrl: string }) => {
+      const isAuthenticated =
+        accessToken ||
+        (typeof window !== "undefined" &&
+          Boolean(localStorage.getItem("shortify.accessToken")));
+
+      return isAuthenticated ? createUrl(input) : createGuestUrl(input);
+    },
     onSuccess: (url) => {
       setShortUrl(url);
-      toast.success("Short URL ready");
+      setLinkError(null);
+      const isAuthenticated =
+        accessToken ||
+        (typeof window !== "undefined" &&
+          Boolean(localStorage.getItem("shortify.accessToken")));
+
+      if (isAuthenticated) {
+        queryClient.setQueryData<PaginatedUrls>(["urls"], (current) => {
+          if (!current) {
+            return {
+              items: [url],
+              page: 1,
+              limit: 20,
+              total: 1,
+            };
+          }
+
+          return {
+            ...current,
+            items: [url, ...current.items],
+            total: current.total + 1,
+          };
+        });
+        queryClient.invalidateQueries({ queryKey: ["urls"] });
+      }
+      toast.success(
+        accessToken ||
+          (typeof window !== "undefined" &&
+            localStorage.getItem("shortify.accessToken"))
+          ? "Short URL created"
+          : "Short URL ready",
+      );
     },
     onError: (error) => toast.error(getApiMessage(error)),
   });
@@ -89,14 +132,30 @@ export default function Home() {
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              mutation.mutate({ originalUrl: link });
+              const normalizedUrl = normalizeUrlInput(link);
+
+              try {
+                new URL(normalizedUrl);
+              } catch {
+                setLinkError("Enter a valid URL");
+                return;
+              }
+
+              setLinkError(null);
+              mutation.mutate({ originalUrl: normalizedUrl });
             }}
           >
             <Input
               label="Destination URL"
               value={link}
-              onChange={(event) => setLink(event.target.value)}
+              onChange={(event) => {
+                setLink(event.target.value);
+                if (linkError) {
+                  setLinkError(null);
+                }
+              }}
               placeholder="https://example.com/a/very/long/url"
+              error={linkError ?? undefined}
             />
             <Button className="w-full" disabled={mutation.isPending}>
               {mutation.isPending ? "Shortening..." : "Shorten URL"}

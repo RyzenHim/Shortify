@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { destinationUrlField } from "@/lib/urlValidation";
 import { ListRowSkeleton } from "@/components/ui/Skeleton";
 import {
   createUrl,
@@ -19,16 +20,14 @@ import {
 import { getApiMessage } from "@/lib/api";
 import type { PaginatedUrls, ShortUrl } from "@/lib/types";
 
-const urlField = z.string().trim().url("Enter a valid URL");
-
 const schema = z.object({
-  originalUrl: urlField,
+  originalUrl: destinationUrlField,
   title: z.string(),
   customCode: z.string(),
 });
 
 const editSchema = z.object({
-  originalUrl: urlField,
+  originalUrl: destinationUrlField,
   title: z.string(),
   isActive: z.boolean(),
   resetClicks: z.boolean(),
@@ -89,8 +88,14 @@ export default function UrlManagementPage() {
           total: current.total + 1,
         };
       });
-      form.reset({ originalUrl: "", title: "", customCode: "" });
-      form.clearErrors();
+      const createdOriginalUrl = form.getValues("originalUrl");
+      form.reset({
+        originalUrl: createdOriginalUrl,
+        title: "",
+        customCode: "",
+      });
+      form.clearErrors("title");
+      form.clearErrors("customCode");
       queryClient.invalidateQueries({ queryKey: ["urls"] });
       toast.success("Short URL created");
     },
@@ -149,7 +154,7 @@ export default function UrlManagementPage() {
           className="mt-5 space-y-4"
           onSubmit={form.handleSubmit((data) => {
             const payload = {
-              originalUrl: data.originalUrl.trim(),
+              originalUrl: data.originalUrl,
               ...(data.title?.trim() ? { title: data.title.trim() } : {}),
               ...(data.customCode?.trim()
                 ? { customCode: data.customCode.trim() }
@@ -278,7 +283,7 @@ export default function UrlManagementPage() {
             onSubmit={editForm.handleSubmit((values) =>
               updateMutation.mutate({
                 id: editingUrl.id,
-                originalUrl: values.originalUrl.trim(),
+                originalUrl: values.originalUrl,
                 ...(values.title?.trim() ? { title: values.title.trim() } : {}),
                 isActive: values.isActive,
                 resetClicks: values.resetClicks,

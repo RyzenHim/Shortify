@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { hydrateSession } from "@/features/auth/authSlice";
 import {
   hydratePreferences,
   setPreferencesFromUser,
@@ -13,6 +14,7 @@ export function ThemeController() {
   const { theme, accentColor } = useAppSelector((state) => state.preferences);
 
   useEffect(() => {
+    dispatch(hydrateSession());
     dispatch(hydratePreferences());
   }, [dispatch]);
 
