@@ -15,12 +15,14 @@ import { AuthGuard } from '@nestjs/passport';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import {
+  changePasswordSchema,
   loginSchema,
   registerSchema,
   updatePreferencesSchema,
   updateProfileSchema,
 } from './dto/auth.dto';
 import type {
+  ChangePasswordDto,
   LoginDto,
   RegisterDto,
   UpdatePreferencesDto,
@@ -112,6 +114,18 @@ export class AuthController {
     return {
       message: 'Preferences updated',
       data: await this.authService.updatePreferences(user.sub, dto),
+    };
+  }
+
+  @Patch('password')
+  @UseGuards(AuthGuard('jwt'))
+  async changePassword(
+    @CurrentUser() user: JwtUser,
+    @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto,
+  ) {
+    return {
+      message: 'Password updated successfully',
+      data: await this.authService.changePassword(user.sub, dto),
     };
   }
 

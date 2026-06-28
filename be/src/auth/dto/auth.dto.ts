@@ -20,7 +20,23 @@ export const updatePreferencesSchema = z.object({
   accentColor: z.enum(['teal', 'blue', 'violet', 'rose', 'amber']),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(8, 'New password must contain at least 8 characters'),
+    confirmPassword: z
+      .string()
+      .min(8, 'Confirm password must contain at least 8 characters'),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    message: 'New passwords do not match',
+    path: ['confirmPassword'],
+  });
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
 export type UpdatePreferencesDto = z.infer<typeof updatePreferencesSchema>;
+export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;

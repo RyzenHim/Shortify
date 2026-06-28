@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -106,6 +108,44 @@ export class UsersService {
     const user = await this.findById(userId);
     user.theme = input.theme;
     user.accentColor = input.accentColor;
+    await user.save();
+    return this.toSafeUser(user);
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('User not found');
+    }
+
+    const user = await this.userModel
+      .findById(userId)
+      .select('+password')
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.provider !== 'local' || !user.password) {
+      throw new BadRequestException(
+        'Google accounts do not use a local password. Please manage your password through Google.',
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+
+    user.password = await bcrypt.hash(newPassword, 12);
     await user.save();
     return this.toSafeUser(user);
   }

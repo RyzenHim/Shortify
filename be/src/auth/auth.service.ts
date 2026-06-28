@@ -6,6 +6,7 @@ import { Role } from '../common/enums/role.enum';
 import { UsersService } from '../users/users.service';
 import type { UserDocument } from '../users/schemas/user.schema';
 import type {
+  ChangePasswordDto,
   LoginDto,
   RegisterDto,
   UpdatePreferencesDto,
@@ -85,6 +86,14 @@ export class AuthService {
 
   async updatePreferences(userId: string, dto: UpdatePreferencesDto) {
     return this.usersService.updatePreferences(userId, dto);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    return this.usersService.changePassword(
+      userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   async validateOAuthUser(profile: {

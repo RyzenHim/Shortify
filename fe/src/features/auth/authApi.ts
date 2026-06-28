@@ -52,3 +52,12 @@ export async function updatePreferences(input: {
   );
   return data.data;
 }
+
+export async function changePassword(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}) {
+  const { data } = await api.patch<ApiResponse<User>>("/auth/password", input);
+  return data.data;
+}
