@@ -17,9 +17,15 @@ import { AuthService } from './auth.service';
 import {
   loginSchema,
   registerSchema,
+  updatePreferencesSchema,
   updateProfileSchema,
 } from './dto/auth.dto';
-import type { LoginDto, RegisterDto, UpdateProfileDto } from './dto/auth.dto';
+import type {
+  LoginDto,
+  RegisterDto,
+  UpdatePreferencesDto,
+  UpdateProfileDto,
+} from './dto/auth.dto';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Role } from '../common/enums/role.enum';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -93,6 +99,19 @@ export class AuthController {
     return {
       message: 'Profile updated',
       data: await this.authService.updateProfile(user.sub, dto),
+    };
+  }
+
+  @Patch('preferences')
+  @UseGuards(AuthGuard('jwt'))
+  async updatePreferences(
+    @CurrentUser() user: JwtUser,
+    @Body(new ZodValidationPipe(updatePreferencesSchema))
+    dto: UpdatePreferencesDto,
+  ) {
+    return {
+      message: 'Preferences updated',
+      data: await this.authService.updatePreferences(user.sub, dto),
     };
   }
 

@@ -110,7 +110,7 @@ export default function AdminPage() {
                     key={stat.label}
                     className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-5"
                   >
-                    <ShieldAlert className="mb-4 h-5 w-5 text-teal-600" />
+                    <ShieldAlert className="mb-4 h-5 w-5 text-[var(--accent)]" />
                     <p className="text-sm text-[var(--muted)]">{stat.label}</p>
                     <p className="mt-2 text-3xl font-bold">{stat.value}</p>
                   </div>
@@ -126,7 +126,7 @@ export default function AdminPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search URLs or owners"
-                className="h-10 w-full rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-teal-500"
+                className="h-10 w-full rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
               />
             </div>
             <div className="divide-y divide-[var(--line)]">

@@ -1,4 +1,6 @@
 export type Role = "user" | "admin";
+export type ThemeMode = "light" | "dark";
+export type AccentColor = "teal" | "blue" | "violet" | "rose" | "amber";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -13,6 +15,8 @@ export interface User {
   role: Role;
   provider?: "local" | "google";
   isActive?: boolean;
+  theme?: ThemeMode;
+  accentColor?: AccentColor;
 }
 
 export interface AuthPayload {

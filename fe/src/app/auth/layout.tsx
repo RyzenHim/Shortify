@@ -40,7 +40,7 @@ export default function AuthLayout({
                   key={benefit.label}
                   className="flex items-center gap-3 rounded-md border border-[var(--line)] p-3 text-sm"
                 >
-                  <Icon className="h-4 w-4 text-teal-600" />
+                  <Icon className="h-4 w-4 text-[var(--accent)]" />
                   <span>{benefit.label}</span>
                 </div>
               );

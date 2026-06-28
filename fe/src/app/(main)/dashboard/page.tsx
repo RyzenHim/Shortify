@@ -19,7 +19,7 @@ export default function DashBoardPage() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p className="text-sm text-teal-600">Welcome back</p>
+          <p className="text-sm text-[var(--accent)]">Welcome back</p>
           <h2 className="text-2xl font-bold">Dashboard</h2>
           <p className="text-sm text-[var(--muted)]">
             {user?.name
@@ -29,7 +29,7 @@ export default function DashBoardPage() {
         </div>
         <Link
           href="/dashboard/urls"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
         >
           <Plus className="h-4 w-4" />
           New URL
@@ -56,7 +56,7 @@ export default function DashBoardPage() {
                   key={stat.label}
                   className="rounded-lg border border-[var(--line)] bg-[var(--panel)] p-5"
                 >
-                  <Icon className="mb-4 h-5 w-5 text-teal-600" />
+                  <Icon className="mb-4 h-5 w-5 text-[var(--accent)]" />
                   <p className="text-sm text-[var(--muted)]">{stat.label}</p>
                   <p className="mt-2 text-3xl font-bold">{stat.value}</p>
                 </div>
@@ -74,7 +74,7 @@ export default function DashBoardPage() {
           </div>
           <Link
             href="/dashboard/urls"
-            className="text-sm font-semibold text-teal-600 hover:text-teal-700"
+            className="text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
             View all
           </Link>

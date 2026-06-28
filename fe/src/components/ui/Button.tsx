@@ -13,7 +13,7 @@ export function Button({
     <button
       className={clsx(
         "inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60",
-        variant === "primary" && "bg-teal-600 text-white hover:bg-teal-700",
+        variant === "primary" && "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]",
         variant === "secondary" &&
           "border border-[var(--line)] bg-[var(--panel)] text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5",
         variant === "ghost" &&

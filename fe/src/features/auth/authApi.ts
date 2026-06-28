@@ -1,5 +1,11 @@
 import { api } from "@/lib/api";
-import type { ApiResponse, AuthPayload, User } from "@/lib/types";
+import type {
+  AccentColor,
+  ApiResponse,
+  AuthPayload,
+  ThemeMode,
+  User,
+} from "@/lib/types";
 
 export interface LoginInput {
   email: string;
@@ -33,5 +39,16 @@ export async function register(input: RegisterInput) {
 
 export async function updateProfile(input: { name: string }) {
   const { data } = await api.patch<ApiResponse<User>>("/auth/profile", input);
+  return data.data;
+}
+
+export async function updatePreferences(input: {
+  theme: ThemeMode;
+  accentColor: AccentColor;
+}) {
+  const { data } = await api.patch<ApiResponse<User>>(
+    "/auth/preferences",
+    input,
+  );
   return data.data;
 }

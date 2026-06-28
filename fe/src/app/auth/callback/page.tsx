@@ -37,7 +37,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="grid min-h-screen place-items-center bg-[var(--background)] px-4 text-center">
       <div>
-        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[var(--line)] border-t-teal-600" />
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--accent)]" />
         <h1 className="text-xl font-semibold">Completing Google sign-in</h1>
         <p className="mt-2 text-sm text-[var(--muted)]">
           You will be redirected to your dashboard.

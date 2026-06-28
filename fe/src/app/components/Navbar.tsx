@@ -8,7 +8,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--background)]/80 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-teal-600 text-white">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-[var(--accent)] text-white">
             S
           </span>
           Shortify
@@ -25,7 +25,7 @@ export default function Navbar() {
 
           <Link
             href="/auth/login"
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-teal-600 px-4 text-sm font-semibold text-white hover:bg-teal-700"
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
           >
             Login
             <ArrowRight className="h-4 w-4" />

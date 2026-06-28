@@ -45,7 +45,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             className="flex min-w-0 items-center gap-2 text-xl font-bold"
             aria-label="Shortify home"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-teal-600 text-white">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[var(--accent)] text-white">
               S
             </span>
             {!isCollapsed ? <span className="truncate">Shortify</span> : null}
@@ -78,7 +78,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   title={item.label}
                   className={`flex h-10 items-center rounded-md px-3 text-sm font-medium ${
                     active
-                      ? "bg-teal-600 text-white"
+                      ? "bg-[var(--accent)] text-white"
                       : "text-[var(--muted)] hover:bg-black/5 hover:text-[var(--foreground)] dark:hover:bg-white/5"
                   } ${isCollapsed ? "justify-center" : "gap-3"}`}
                 >
@@ -127,7 +127,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium ${
                       active
-                        ? "bg-teal-600 text-white"
+                        ? "bg-[var(--accent)] text-white"
                         : "border border-[var(--line)] bg-[var(--panel)] text-[var(--muted)]"
                     }`}
                   >

@@ -5,7 +5,12 @@ import * as bcrypt from 'bcrypt';
 import { Role } from '../common/enums/role.enum';
 import { UsersService } from '../users/users.service';
 import type { UserDocument } from '../users/schemas/user.schema';
-import type { LoginDto, RegisterDto, UpdateProfileDto } from './dto/auth.dto';
+import type {
+  LoginDto,
+  RegisterDto,
+  UpdatePreferencesDto,
+  UpdateProfileDto,
+} from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -56,6 +61,10 @@ export class AuthService {
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  async updatePreferences(userId: string, dto: UpdatePreferencesDto) {
+    return this.usersService.updatePreferences(userId, dto);
   }
 
   async validateOAuthUser(profile: {

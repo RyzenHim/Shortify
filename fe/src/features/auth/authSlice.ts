@@ -35,10 +35,20 @@ const authSlice = createSlice({
       localStorage.setItem("shortify.user", JSON.stringify(action.payload.user));
       localStorage.setItem("shortify.accessToken", action.payload.accessToken);
       localStorage.setItem("shortify.refreshToken", action.payload.refreshToken);
+      localStorage.setItem("shortify.theme", action.payload.user.theme ?? "dark");
+      localStorage.setItem(
+        "shortify.accentColor",
+        action.payload.user.accentColor ?? "teal",
+      );
     },
     updateUser(state, action: PayloadAction<User>) {
       state.user = action.payload;
       localStorage.setItem("shortify.user", JSON.stringify(action.payload));
+      localStorage.setItem("shortify.theme", action.payload.theme ?? "dark");
+      localStorage.setItem(
+        "shortify.accentColor",
+        action.payload.accentColor ?? "teal",
+      );
     },
     clearSession(state) {
       state.user = null;

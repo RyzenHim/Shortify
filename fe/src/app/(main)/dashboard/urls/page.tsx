@@ -196,7 +196,7 @@ export default function UrlManagementPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search links"
-                className="h-10 w-full rounded-md border border-[var(--line)] bg-[var(--background)] pl-9 pr-3 text-sm outline-none focus:border-teal-500"
+                className="h-10 w-full rounded-md border border-[var(--line)] bg-[var(--background)] pl-9 pr-3 text-sm outline-none focus:border-[var(--accent)]"
               />
             </label>
             <select
@@ -204,7 +204,7 @@ export default function UrlManagementPage() {
               onChange={(event) =>
                 setStatus(event.target.value as "all" | "active" | "inactive")
               }
-              className="h-10 rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-teal-500"
+              className="h-10 rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
             >
               <option value="all">All links</option>
               <option value="active">Active</option>
@@ -221,7 +221,7 @@ export default function UrlManagementPage() {
             <div key={url.id} className="grid gap-4 p-5 md:grid-cols-[1fr_auto] md:items-center">
               <div className="min-w-0">
                 <p className="font-semibold">{url.title ?? url.shortCode}</p>
-                <p className="truncate text-sm text-teal-600">{url.shortUrl}</p>
+                <p className="truncate text-sm text-[var(--accent)]">{url.shortUrl}</p>
                 <p className="truncate text-sm text-[var(--muted)]">{url.originalUrl}</p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   {url.clicks} clicks · {url.isActive ? "Active" : "Inactive"}
@@ -311,7 +311,7 @@ export default function UrlManagementPage() {
               <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-teal-600"
+                  className="mt-1 h-4 w-4 accent-[var(--accent)]"
                   {...editForm.register("isActive")}
                 />
                 <span>
@@ -324,7 +324,7 @@ export default function UrlManagementPage() {
               <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm">
                 <input
                   type="checkbox"
-                  className="mt-1 h-4 w-4 accent-teal-600"
+                  className="mt-1 h-4 w-4 accent-[var(--accent)]"
                   {...editForm.register("resetClicks")}
                 />
                 <span>

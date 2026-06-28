@@ -29,6 +29,16 @@ export class User {
 
   @Prop({ select: false })
   refreshTokenHash?: string;
+
+  @Prop({ type: String, enum: ['light', 'dark'], default: 'dark' })
+  theme: 'light' | 'dark';
+
+  @Prop({
+    type: String,
+    enum: ['teal', 'blue', 'violet', 'rose', 'amber'],
+    default: 'teal',
+  })
+  accentColor: 'teal' | 'blue' | 'violet' | 'rose' | 'amber';
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

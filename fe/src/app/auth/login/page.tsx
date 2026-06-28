@@ -56,7 +56,7 @@ export default function LoginPage() {
             <span className="text-sm font-medium">Password</span>
             <Link
               href="/auth/forgot-password"
-              className="text-xs text-teal-600 hover:text-teal-700"
+              className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
             >
               Forgot Password?
             </Link>
@@ -83,7 +83,7 @@ export default function LoginPage() {
         Don&apos;t have an account?{" "}
         <Link
           href="/auth/register"
-          className="font-medium text-teal-600 hover:text-teal-700"
+          className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
         >
           Sign Up
         </Link>

@@ -96,6 +96,20 @@ export class UsersService {
     return this.toSafeUser(user);
   }
 
+  async updatePreferences(
+    userId: string,
+    input: {
+      theme: 'light' | 'dark';
+      accentColor: 'teal' | 'blue' | 'violet' | 'rose' | 'amber';
+    },
+  ) {
+    const user = await this.findById(userId);
+    user.theme = input.theme;
+    user.accentColor = input.accentColor;
+    await user.save();
+    return this.toSafeUser(user);
+  }
+
   async findOrCreateOAuthUser(input: CreateUserInput): Promise<UserDocument> {
     const user = await this.findByEmail(input.email);
     if (user) {
@@ -132,6 +146,8 @@ export class UsersService {
       role: user.role,
       provider: user.provider,
       isActive: user.isActive,
+      theme: user.theme ?? 'dark',
+      accentColor: user.accentColor ?? 'teal',
     };
   }
 }

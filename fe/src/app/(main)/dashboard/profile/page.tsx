@@ -47,7 +47,7 @@ export default function ProfilePage() {
       <div className="max-w-3xl rounded-lg border border-[var(--line)] bg-[var(--panel)] p-6">
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-md bg-teal-600 text-white">
+            <div className="grid h-12 w-12 place-items-center rounded-md bg-[var(--accent)] text-white">
               <UserRound className="h-5 w-5" />
             </div>
             <div>

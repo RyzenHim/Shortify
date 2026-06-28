@@ -55,7 +55,7 @@ export default function Home() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
               href="#shorten"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-teal-600 px-5 text-sm font-semibold text-white hover:bg-teal-700"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-5 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
             >
               Shorten a URL
               <ArrowRight className="h-4 w-4" />
@@ -83,7 +83,7 @@ export default function Home() {
                 No account required for your first short link.
               </p>
             </div>
-            <Link2 className="h-5 w-5 text-teal-600" />
+            <Link2 className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <form
             className="space-y-4"
@@ -107,7 +107,7 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-5 rounded-md border border-teal-500/30 bg-teal-500/10 p-4"
+              className="mt-5 rounded-md border border-[color:var(--accent-border)] bg-[color:var(--accent-soft)] p-4"
             >
               <p className="text-sm font-semibold">Your short link is ready</p>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -183,7 +183,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="rounded-lg border border-[var(--line)] bg-[var(--background)] p-5"
               >
-                <Icon className="mb-4 h-5 w-5 text-teal-600" />
+                <Icon className="mb-4 h-5 w-5 text-[var(--accent)]" />
                 <h3 className="font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                   {feature.copy}
@@ -213,7 +213,7 @@ export default function Home() {
               key={item}
               className="flex gap-3 rounded-lg border border-[var(--line)] p-4"
             >
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent)]" />
               <span className="text-sm text-[var(--muted)]">{item}</span>
             </div>
           ))}
