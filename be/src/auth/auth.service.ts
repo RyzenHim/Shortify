@@ -28,13 +28,33 @@ export class AuthService {
   async login(dto: LoginDto, role?: Role) {
     const user = await this.usersService.findByEmail(dto.email, true);
 
-    if (!user?.password || !user.isActive) {
-      throw new UnauthorizedException('Invalid email or password');
+    if (!user) {
+      throw new UnauthorizedException(
+        'No account found with this email. Please sign up first.',
+      );
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'This account uses Google sign-in. Please continue with Google.',
+      );
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'This account has been disabled. Please contact support.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid || (role && user.role !== role)) {
-      throw new UnauthorizedException('Invalid email or password');
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Password does not match.');
+    }
+
+    if (role && user.role !== role) {
+      throw new UnauthorizedException(
+        'This account does not have admin access.',
+      );
     }
 
     const tokens = await this.issueTokens(user);

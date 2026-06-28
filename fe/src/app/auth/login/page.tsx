@@ -32,7 +32,15 @@ export default function LoginPage() {
       toast.success("Welcome back");
       router.push("/dashboard");
     },
-    onError: (error) => toast.error(getApiMessage(error)),
+    onError: (error) => {
+      const message = getApiMessage(error);
+      if (message.toLowerCase().includes("password")) {
+        form.setError("password", { message });
+      } else if (message.toLowerCase().includes("email")) {
+        form.setError("email", { message });
+      }
+      toast.error(message);
+    },
   });
 
   return (

@@ -28,11 +28,16 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiResponse<null>>) => {
     const originalRequest = error.config as RetriableRequestConfig | undefined;
+    const requestUrl = originalRequest?.url ?? "";
+    const isLoginRequest =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/admin/login");
 
     if (
       error.response?.status !== 401 ||
       !originalRequest ||
       originalRequest._retry ||
+      isLoginRequest ||
       originalRequest.url?.includes("/auth/refresh")
     ) {
       return Promise.reject(error);
