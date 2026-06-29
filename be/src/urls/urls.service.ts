@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -123,10 +124,14 @@ export class UrlsService {
 
   async resolve(shortCode: string) {
     const url = await this.urlModel
-      .findOne({ shortCode, isActive: true })
+      .findOne({ shortCode })
       .exec();
     if (!url) {
       throw new NotFoundException('Short URL not found');
+    }
+
+    if (!url.isActive) {
+      throw new BadRequestException('This short URL has been deactivated');
     }
 
     await this.urlModel

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -27,6 +27,20 @@ export default function Home() {
   const [link, setLink] = useState("");
   const [shortUrl, setShortUrl] = useState<ShortUrl | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get("error");
+      if (error === "inactive") {
+        toast.error("This short URL has been deactivated by its owner.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (error === "notfound") {
+        toast.error("The short URL was not found.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
   const queryClient = useQueryClient();
   const accessToken = useAppSelector((state) => state.auth.accessToken);
   const mutation = useMutation({

@@ -166,7 +166,11 @@ export default function UrlManagementPage() {
       });
       setEditingUrl(null);
       queryClient.invalidateQueries({ queryKey: ["urls"] });
-      toast.success("URL updated");
+      if (!updatedUrl.isActive) {
+        toast.info(`URL "${updatedUrl.title ?? updatedUrl.shortCode}" has been set to inactive and will no longer redirect.`);
+      } else {
+        toast.success("URL updated");
+      }
     },
     onError: (error) => toast.error(getApiMessage(error)),
   });
