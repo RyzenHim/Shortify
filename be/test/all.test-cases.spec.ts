@@ -200,10 +200,7 @@ describe('Backend - Comprehensive test cases', () => {
     it('PATCH /auth/profile should call authService.updateProfile(user.sub, dto)', async () => {
       authServiceMock.updateProfile.mockResolvedValue({ ok: true });
       const dto = { name: 'New Name' };
-      const res = await controller.updateProfile(
-        { sub: 'u1' } as any,
-        dto as any,
-      );
+      const res = await controller.updateProfile({ sub: 'u1' } as any, dto);
       expect(authServiceMock.updateProfile).toHaveBeenCalledWith('u1', dto);
       expect(res).toEqual({ message: 'Profile updated', data: { ok: true } });
     });
@@ -229,10 +226,7 @@ describe('Backend - Comprehensive test cases', () => {
         newPassword: 'newpass123',
         confirmPassword: 'newpass123',
       };
-      const res = await controller.changePassword(
-        { sub: 'u1' } as any,
-        dto as any,
-      );
+      const res = await controller.changePassword({ sub: 'u1' } as any, dto);
       expect(authServiceMock.changePassword).toHaveBeenCalledWith('u1', dto);
       expect(res).toEqual({
         message: 'Password updated successfully',
@@ -392,7 +386,7 @@ describe('Backend - Comprehensive test cases', () => {
       usersServiceMock.setRefreshToken.mockResolvedValue(undefined);
 
       const res = await service.login(
-        { email: 'x@y.com', password: 'password123' } as any,
+        { email: 'x@y.com', password: 'password123' },
         Role.Admin,
       );
       expect(res).toEqual({
@@ -757,7 +751,7 @@ describe('Backend - Comprehensive test cases', () => {
         title: 't',
         customCode: undefined,
       };
-      const res = await controller.create({ sub: 'owner1' } as any, dto as any);
+      const res = await controller.create({ sub: 'owner1' } as any, dto);
       expect(res).toEqual({ message: 'Short URL created', data: { id: 'u1' } });
     });
 
@@ -785,7 +779,7 @@ describe('Backend - Comprehensive test cases', () => {
       const controller = new PublicUrlsController(urlsServiceMock);
       const res = await controller.create({
         originalUrl: 'https://example.com',
-      } as any);
+      });
       expect(res).toEqual({
         message: 'Short URL created',
         data: { id: 'g1', isGuest: true },

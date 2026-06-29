@@ -106,6 +106,13 @@ export class AuthService {
       ...profile,
       role: Role.User,
     });
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'This profile is disabled. Please contact support.',
+      );
+    }
+
     const tokens = await this.issueTokens(user);
     return { user: this.usersService.toSafeUser(user), ...tokens };
   }

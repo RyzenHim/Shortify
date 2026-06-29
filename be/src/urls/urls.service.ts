@@ -24,7 +24,9 @@ export class UrlsService {
     if (dto.customCode) {
       const existing = await this.urlModel.findOne({ shortCode }).exec();
       if (existing) {
-        throw new ConflictException(`The custom alias "${dto.customCode}" is already in use.`);
+        throw new ConflictException(
+          `The custom alias "${dto.customCode}" is already in use.`,
+        );
       }
     }
 
@@ -123,9 +125,7 @@ export class UrlsService {
   }
 
   async resolve(shortCode: string) {
-    const url = await this.urlModel
-      .findOne({ shortCode })
-      .exec();
+    const url = await this.urlModel.findOne({ shortCode }).exec();
     if (!url) {
       throw new NotFoundException('Short URL not found');
     }

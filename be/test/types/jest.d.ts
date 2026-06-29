@@ -4,7 +4,6 @@
 import 'jest';
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace jest {
     // keep empty; types come from @types/jest
   }

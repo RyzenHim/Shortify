@@ -2,14 +2,27 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, ExternalLink, Pencil, Search, Trash2, X } from "lucide-react";
+import {
+  Copy,
+  ExternalLink,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+  AlertCircle,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { destinationUrlField, normalizeUrlInput } from "@/lib/urlValidation";
+import {
+  normalizeUrlInput,
+  createUrlSchema,
+  editUrlSchema,
+  type CreateUrlForm,
+  type EditUrlForm,
+} from "@/lib/urlValidation";
 import { ListRowSkeleton } from "@/components/ui/Skeleton";
 import {
   createUrl,
@@ -21,51 +34,126 @@ import { getApiMessage } from "@/lib/api";
 import type { PaginatedUrls, ShortUrl } from "@/lib/types";
 import { clsx } from "clsx";
 
-const schema = z.object({
-  originalUrl: destinationUrlField,
-  title: z.string(),
-  customCode: z.string(),
-});
+// ---------------------------------------------------------------------------
+// Small helper: field error + hint row
+// ---------------------------------------------------------------------------
+function FieldMessage({
+  error,
+  hint,
+}: {
+  error?: string;
+  hint?: React.ReactNode;
+}) {
+  if (error) {
+    return (
+      <p className="mt-1.5 flex items-start gap-1.5 text-xs text-rose-500">
+        <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        {error}
+      </p>
+    );
+  }
+  if (hint) {
+    return <p className="mt-1.5 text-xs text-[var(--muted)]">{hint}</p>;
+  }
+  return null;
+}
 
-const editSchema = z.object({
-  originalUrl: destinationUrlField,
-  title: z.string(),
-  isActive: z.boolean(),
-  resetClicks: z.boolean(),
-});
+// Character counter that turns red when approaching the limit
+function CharCount({ current, max }: { current: number; max: number }) {
+  const near = current >= max * 0.8;
+  const over = current > max;
+  return (
+    <span
+      className={clsx(
+        "text-[10px] tabular-nums",
+        over
+          ? "text-rose-500 font-semibold"
+          : near
+            ? "text-amber-500"
+            : "text-[var(--muted)]",
+      )}
+    >
+      {current}/{max}
+    </span>
+  );
+}
 
-type UrlForm = z.infer<typeof schema>;
-type EditUrlForm = z.infer<typeof editSchema>;
+// Controlled input wrapper that adds error border + optional right element
+function ValidatedInput({
+  label,
+  error,
+  hint,
+  right,
+  inputProps,
+}: {
+  label: string;
+  error?: string;
+  hint?: React.ReactNode;
+  right?: React.ReactNode;
+  inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium leading-none">{label}</label>
+        {right}
+      </div>
+      <input
+        {...inputProps}
+        className={clsx(
+          "h-10 w-full rounded-md border bg-[var(--background)] px-3 text-sm outline-none transition-colors",
+          error
+            ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20"
+            : "border-[var(--line)] focus:border-[var(--accent)]",
+        )}
+      />
+      <FieldMessage error={error} hint={hint} />
+    </div>
+  );
+}
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 export default function UrlManagementPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
-  const [sortBy, setSortBy] = useState<"newest" | "clicks-desc" | "clicks-asc">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "clicks-desc" | "clicks-asc">(
+    "newest",
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [formKey, setFormKey] = useState(0);
   const [editingUrl, setEditingUrl] = useState<ShortUrl | null>(null);
   const [deletingUrl, setDeletingUrl] = useState<ShortUrl | null>(null);
   const queryClient = useQueryClient();
 
-  const form = useForm<UrlForm>({
-    resolver: zodResolver(schema),
+  // ---- Create form ----
+  const form = useForm<CreateUrlForm>({
+    resolver: zodResolver(createUrlSchema),
     defaultValues: { originalUrl: "", title: "", customCode: "" },
+    mode: "onTouched", // validate on blur, then live on change
   });
+
+  const watchedTitle = form.watch("title") ?? "";
+  // ---- Edit form ----
   const editForm = useForm<EditUrlForm>({
-    resolver: zodResolver(editSchema),
+    resolver: zodResolver(editUrlSchema),
     defaultValues: {
       originalUrl: "",
       title: "",
       isActive: true,
       resetClicks: false,
     },
+    mode: "onTouched",
   });
 
+  const editTitle = editForm.watch("title") ?? "";
+
+  // ---- Data ----
   const { data, isLoading } = useQuery({
     queryKey: ["urls"],
     queryFn: getUrls,
   });
-
 
   const sortedAndFilteredUrls = useMemo(() => {
     const urls = data?.items ?? [];
@@ -79,14 +167,9 @@ export default function UrlManagementPage() {
         (status === "inactive" && !url.isActive);
       return matchesSearch && matchesStatus;
     });
-
     return [...filtered].sort((a, b) => {
-      if (sortBy === "clicks-desc") {
-        return b.clicks - a.clicks;
-      }
-      if (sortBy === "clicks-asc") {
-        return a.clicks - b.clicks;
-      }
+      if (sortBy === "clicks-desc") return b.clicks - a.clicks;
+      if (sortBy === "clicks-asc") return a.clicks - b.clicks;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }, [data?.items, query, status, sortBy]);
@@ -98,30 +181,24 @@ export default function UrlManagementPage() {
 
   const totalPages = Math.ceil(sortedAndFilteredUrls.length / 10);
 
+  // ---- Mutations ----
   const createMutation = useMutation({
     mutationFn: createUrl,
     onSuccess: (createdUrl) => {
       queryClient.setQueryData<PaginatedUrls>(["urls"], (current) => {
-        if (!current) {
-          return {
-            items: [createdUrl],
-            page: 1,
-            limit: 20,
-            total: 1,
-          };
-        }
-
+        if (!current)
+          return { items: [createdUrl], page: 1, limit: 20, total: 1 };
         return {
           ...current,
           items: [createdUrl, ...current.items],
           total: current.total + 1,
         };
       });
-
-      // Increment formKey to completely discard old DOM inputs and errors
       setFormKey((prev) => prev + 1);
-      form.reset({ originalUrl: "", title: "", customCode: "" }, { keepErrors: false });
-
+      form.reset(
+        { originalUrl: "", title: "", customCode: "" },
+        { keepErrors: false },
+      );
       queryClient.invalidateQueries({ queryKey: ["urls"] });
       toast.success("Short URL created");
     },
@@ -132,10 +209,7 @@ export default function UrlManagementPage() {
     mutationFn: deleteUrl,
     onSuccess: (_data, deletedId) => {
       queryClient.setQueryData<PaginatedUrls>(["urls"], (current) => {
-        if (!current) {
-          return current;
-        }
-
+        if (!current) return current;
         return {
           ...current,
           items: current.items.filter((url) => url.id !== deletedId),
@@ -153,10 +227,7 @@ export default function UrlManagementPage() {
     mutationFn: updateUrl,
     onSuccess: (updatedUrl) => {
       queryClient.setQueryData<PaginatedUrls>(["urls"], (current) => {
-        if (!current) {
-          return current;
-        }
-
+        if (!current) return current;
         return {
           ...current,
           items: current.items.map((url) =>
@@ -167,7 +238,9 @@ export default function UrlManagementPage() {
       setEditingUrl(null);
       queryClient.invalidateQueries({ queryKey: ["urls"] });
       if (!updatedUrl.isActive) {
-        toast.info(`URL "${updatedUrl.title ?? updatedUrl.shortCode}" has been set to inactive and will no longer redirect.`);
+        toast.info(
+          `"${updatedUrl.title ?? updatedUrl.shortCode}" is now inactive.`,
+        );
       } else {
         toast.success("URL updated");
       }
@@ -175,55 +248,130 @@ export default function UrlManagementPage() {
     onError: (error) => toast.error(getApiMessage(error)),
   });
 
+  // ---- Handlers ----
+  function handleCreate(data: CreateUrlForm) {
+    createMutation.mutate({
+      originalUrl: normalizeUrlInput(data.originalUrl),
+      ...(data.title?.trim() ? { title: data.title.trim() } : {}),
+      ...(data.customCode?.trim()
+        ? { customCode: data.customCode.trim() }
+        : {}),
+    });
+  }
+
+  function handleUpdate(values: EditUrlForm) {
+    if (!editingUrl) return;
+    updateMutation.mutate({
+      id: editingUrl.id,
+      originalUrl: normalizeUrlInput(values.originalUrl),
+      ...(values.title?.trim() ? { title: values.title.trim() } : {}),
+      isActive: values.isActive,
+      resetClicks: values.resetClicks,
+    });
+  }
+
+  // ---- Render ----
   return (
     <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
+      {/* ---- Create form panel ---- */}
       <section className="h-fit rounded-lg border border-[var(--line)] bg-[var(--panel)] p-5">
         <h2 className="text-xl font-bold">Create URL</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Generate a saved link. Custom aliases are available here after login.
+          Paste any long link and get a short one instantly.
         </p>
+
         <form
           key={formKey}
           className="mt-5 space-y-4"
-          onSubmit={form.handleSubmit((data) => {
-            const payload = {
-              originalUrl: normalizeUrlInput(data.originalUrl),
-              ...(data.title?.trim() ? { title: data.title.trim() } : {}),
-              ...(data.customCode?.trim()
-                ? { customCode: data.customCode.trim() }
-                : {}),
-            };
-
-            createMutation.mutate(payload);
-          })}
+          onSubmit={form.handleSubmit(handleCreate)}
+          noValidate
         >
-          <Input
+          {/* Destination URL */}
+          <ValidatedInput
             label="Destination URL"
-            placeholder="https://example.com"
             error={form.formState.errors.originalUrl?.message}
-            {...form.register("originalUrl")}
+            hint="Paste a full link — http:// and https:// are both fine."
+            inputProps={{
+              type: "url",
+              placeholder: "https://example.com/very-long-path",
+              autoComplete: "url",
+              ...form.register("originalUrl"),
+            }}
           />
-          <Input
-            label="Title"
-            placeholder="Launch campaign"
-            {...form.register("title")}
-          />
+
+          {/* Title — optional, 60 char cap */}
           <div className="space-y-1.5">
-            <Input
-              label="Custom alias"
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium leading-none">
+                Title{" "}
+                <span className="font-normal text-[var(--muted)]">
+                  (optional)
+                </span>
+              </label>
+              <CharCount current={watchedTitle.length} max={60} />
+            </div>
+            <input
+              type="text"
+              placeholder="Launch campaign"
+              maxLength={65} // let Zod surface the error, but cap runaway input
+              className={clsx(
+                "h-10 w-full rounded-md border bg-[var(--background)] px-3 text-sm outline-none transition-colors",
+                form.formState.errors.title
+                  ? "border-rose-400 focus:border-rose-500"
+                  : "border-[var(--line)] focus:border-[var(--accent)]",
+              )}
+              {...form.register("title")}
+            />
+            <FieldMessage error={form.formState.errors.title?.message} />
+          </div>
+
+          {/* Custom alias — optional */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium leading-none">
+              Custom alias{" "}
+              <span className="font-normal text-[var(--muted)]">
+                (optional)
+              </span>
+            </label>
+            <input
+              type="text"
               placeholder="launch-2026"
+              maxLength={55}
+              className={clsx(
+                "h-10 w-full rounded-md border bg-[var(--background)] px-3 text-sm outline-none transition-colors font-mono",
+                form.formState.errors.customCode
+                  ? "border-rose-400 focus:border-rose-500"
+                  : "border-[var(--line)] focus:border-[var(--accent)]",
+              )}
               {...form.register("customCode")}
             />
-            <p className="text-xs text-[var(--muted)]">
-              Without an alias, a random link will be generated automatically.
-            </p>
+            <FieldMessage
+              error={form.formState.errors.customCode?.message}
+              hint="Letters, numbers, and hyphens only (4–50 chars). Leave blank for a random link."
+            />
           </div>
-          <Button className="w-full" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creating..." : "Create short URL"}
+
+          {/* Submit */}
+          <Button
+            className="w-full"
+            disabled={createMutation.isPending}
+            type="submit"
+          >
+            {createMutation.isPending ? "Creating…" : "Create short URL"}
           </Button>
+
+          {/* Summary error bar — shown when user submits with errors */}
+          {Object.keys(form.formState.errors).length > 0 &&
+            form.formState.isSubmitted && (
+              <div className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-600 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-400">
+                <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Fix the errors above before creating the link.
+              </div>
+            )}
         </form>
       </section>
 
+      {/* ---- URL list panel ---- */}
       <section className="rounded-lg border border-[var(--line)] bg-[var(--panel)] flex flex-col justify-between">
         <div>
           <div className="space-y-4 border-b border-[var(--line)] p-5">
@@ -250,7 +398,9 @@ export default function UrlManagementPage() {
                 <select
                   value={status}
                   onChange={(event) => {
-                    setStatus(event.target.value as "all" | "active" | "inactive");
+                    setStatus(
+                      event.target.value as "all" | "active" | "inactive",
+                    );
                     setCurrentPage(1);
                   }}
                   className="h-10 rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
@@ -262,18 +412,24 @@ export default function UrlManagementPage() {
                 <select
                   value={sortBy}
                   onChange={(event) => {
-                    setSortBy(event.target.value as "newest" | "clicks-desc" | "clicks-asc");
+                    setSortBy(
+                      event.target.value as
+                        | "newest"
+                        | "clicks-desc"
+                        | "clicks-asc",
+                    );
                     setCurrentPage(1);
                   }}
                   className="h-10 rounded-md border border-[var(--line)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
                 >
-                  <option value="newest">Newest First</option>
-                  <option value="clicks-desc">Clicks (High to Low)</option>
-                  <option value="clicks-asc">Clicks (Low to High)</option>
+                  <option value="newest">Newest first</option>
+                  <option value="clicks-desc">Clicks (high to low)</option>
+                  <option value="clicks-asc">Clicks (low to high)</option>
                 </select>
               </div>
             </div>
           </div>
+
           <div className="divide-y divide-[var(--line)]">
             {isLoading
               ? Array.from({ length: 5 }).map((_, index) => (
@@ -295,7 +451,7 @@ export default function UrlManagementPage() {
                       </div>
                       <div className="flex flex-wrap items-baseline gap-x-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] w-28 shrink-0">
-                          Shorted URL:
+                          Short URL:
                         </span>
                         <a
                           href={url.shortUrl}
@@ -319,14 +475,16 @@ export default function UrlManagementPage() {
                           Clicks / Status:
                         </span>
                         <p className="text-xs text-[var(--muted)] flex items-center gap-1.5">
-                          <span className="font-semibold text-[var(--foreground)]">{url.clicks} clicks</span>
+                          <span className="font-semibold text-[var(--foreground)]">
+                            {url.clicks} clicks
+                          </span>
                           <span>·</span>
                           <span
                             className={clsx(
                               "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
                               url.isActive
                                 ? "bg-emerald-500/10 text-emerald-500"
-                                : "bg-rose-500/10 text-rose-500"
+                                : "bg-rose-500/10 text-rose-500",
                             )}
                           >
                             {url.isActive ? "Active" : "Inactive"}
@@ -340,7 +498,7 @@ export default function UrlManagementPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--line)] bg-[var(--panel)] px-3 text-xs font-semibold text-[var(--foreground)] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                        title="Visit Short URL"
+                        title="Visit short URL"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         <span>Visit</span>
@@ -395,11 +553,17 @@ export default function UrlManagementPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-[var(--line)] p-5">
             <p className="text-sm text-[var(--muted)]">
-              Showing <span className="font-medium">{(currentPage - 1) * 10 + 1}</span> to{" "}
+              Showing{" "}
+              <span className="font-medium">{(currentPage - 1) * 10 + 1}</span>{" "}
+              to{" "}
               <span className="font-medium">
                 {Math.min(currentPage * 10, sortedAndFilteredUrls.length)}
               </span>{" "}
-              of <span className="font-medium">{sortedAndFilteredUrls.length}</span> results
+              of{" "}
+              <span className="font-medium">
+                {sortedAndFilteredUrls.length}
+              </span>{" "}
+              results
             </p>
             <div className="flex gap-2">
               <Button
@@ -423,20 +587,13 @@ export default function UrlManagementPage() {
         )}
       </section>
 
+      {/* ---- Edit modal ---- */}
       {editingUrl ? (
         <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/45 px-4 py-6">
           <form
             className="w-full max-w-lg rounded-lg border border-[var(--line)] bg-[var(--panel)] p-5 shadow-2xl"
-            onSubmit={editForm.handleSubmit((values) =>
-              updateMutation.mutate({
-                id: editingUrl.id,
-                // ✅ normalizeUrlInput called here instead of z.preprocess
-                originalUrl: normalizeUrlInput(values.originalUrl),
-                ...(values.title?.trim() ? { title: values.title.trim() } : {}),
-                isActive: values.isActive,
-                resetClicks: values.resetClicks,
-              }),
-            )}
+            onSubmit={editForm.handleSubmit(handleUpdate)}
+            noValidate
           >
             <div className="mb-5 flex items-center justify-between gap-3">
               <div>
@@ -454,14 +611,49 @@ export default function UrlManagementPage() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
             <div className="space-y-4">
-              <Input
+              {/* Destination URL */}
+              <ValidatedInput
                 label="Destination URL"
                 error={editForm.formState.errors.originalUrl?.message}
-                {...editForm.register("originalUrl")}
+                hint="Full URL including https://"
+                inputProps={{
+                  type: "url",
+                  autoComplete: "url",
+                  ...editForm.register("originalUrl"),
+                }}
               />
-              <Input label="Title" {...editForm.register("title")} />
-              <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm">
+
+              {/* Title */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium leading-none">
+                    Title{" "}
+                    <span className="font-normal text-[var(--muted)]">
+                      (optional)
+                    </span>
+                  </label>
+                  <CharCount current={editTitle.length} max={60} />
+                </div>
+                <input
+                  type="text"
+                  maxLength={65}
+                  className={clsx(
+                    "h-10 w-full rounded-md border bg-[var(--background)] px-3 text-sm outline-none transition-colors",
+                    editForm.formState.errors.title
+                      ? "border-rose-400 focus:border-rose-500"
+                      : "border-[var(--line)] focus:border-[var(--accent)]",
+                  )}
+                  {...editForm.register("title")}
+                />
+                <FieldMessage
+                  error={editForm.formState.errors.title?.message}
+                />
+              </div>
+
+              {/* Active toggle */}
+              <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-1 h-4 w-4 accent-[var(--accent)]"
@@ -470,11 +662,13 @@ export default function UrlManagementPage() {
                 <span>
                   <span className="block font-medium">Active short link</span>
                   <span className="text-[var(--muted)]">
-                    Inactive links remain saved but will no longer redirect.
+                    Inactive links remain saved but won't redirect.
                   </span>
                 </span>
               </label>
-              <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm">
+
+              {/* Reset clicks */}
+              <label className="flex items-start gap-3 rounded-md border border-[var(--line)] p-3 text-sm cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-1 h-4 w-4 accent-[var(--accent)]"
@@ -487,14 +681,24 @@ export default function UrlManagementPage() {
                   </span>
                 </span>
               </label>
+
               <Button className="w-full" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Saving..." : "Save changes"}
+                {updateMutation.isPending ? "Saving…" : "Save changes"}
               </Button>
+
+              {Object.keys(editForm.formState.errors).length > 0 &&
+                editForm.formState.isSubmitted && (
+                  <div className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs text-rose-600 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-400">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    Fix the errors above before saving.
+                  </div>
+                )}
             </div>
           </form>
         </div>
       ) : null}
 
+      {/* ---- Delete confirm modal ---- */}
       {deletingUrl ? (
         <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/45 px-4 py-6">
           <div className="w-full max-w-md rounded-lg border border-[var(--line)] bg-[var(--panel)] p-5 shadow-2xl">
@@ -502,14 +706,14 @@ export default function UrlManagementPage() {
               <div>
                 <h3 className="text-lg font-semibold">Delete short URL?</h3>
                 <p className="text-sm text-[var(--muted)]">
-                  This action removes the saved link from your account.
+                  This removes the link from your account permanently.
                 </p>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => setDeletingUrl(null)}
-                aria-label="Close delete confirmation"
+                aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -536,7 +740,7 @@ export default function UrlManagementPage() {
                 disabled={deleteMutation.isPending}
                 onClick={() => deleteMutation.mutate(deletingUrl.id)}
               >
-                {deleteMutation.isPending ? "Deleting..." : "Delete URL"}
+                {deleteMutation.isPending ? "Deleting…" : "Delete URL"}
               </Button>
             </div>
           </div>
