@@ -13,7 +13,7 @@ export function normalizeUrlInput(value: string) {
   return `https://${trimmed}`;
 }
 
-export const destinationUrlField = z.preprocess(
-  (value) => (typeof value === "string" ? normalizeUrlInput(value) : value),
-  z.string().min(1, "Enter a valid URL").url("Enter a valid URL"),
-);
+export const destinationUrlField = z
+  .string()
+  .min(1, "Enter a valid URL")
+  .url("Enter a valid URL");

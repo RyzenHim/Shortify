@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { destinationUrlField } from "@/lib/urlValidation";
+import { destinationUrlField, normalizeUrlInput } from "@/lib/urlValidation";
 import { ListRowSkeleton } from "@/components/ui/Skeleton";
 import {
   createUrl,
@@ -42,53 +42,16 @@ export default function UrlManagementPage() {
   const [editingUrl, setEditingUrl] = useState<ShortUrl | null>(null);
   const [deletingUrl, setDeletingUrl] = useState<ShortUrl | null>(null);
   const queryClient = useQueryClient();
-  // const form = useForm<UrlForm>({
-  //   resolver: zodResolver(schema),
-  //   defaultValues: { originalUrl: "", title: "", customCode: "" },
-  // });
-  // const form = useForm({
-  //   resolver: zodResolver(schema),
-  //   defaultValues: {
-  //     originalUrl: "",
-  //     title: "",
-  //     customCode: "",
-  //   },
-  // });
-  const form = useForm<z.input<typeof schema>, any, z.output<typeof schema>>({
+  const form = useForm<UrlForm>({
     resolver: zodResolver(schema),
-
-    defaultValues: {
-      originalUrl: "",
-
-      title: "",
-
-      customCode: "",
-    },
+    defaultValues: { originalUrl: "", title: "", customCode: "" },
   });
-  // const editForm = useForm({
-  //   resolver: zodResolver(editSchema),
-  //   defaultValues: {
-  //     originalUrl: "",
-  //     title: "",
-  //     isActive: true,
-  //     resetClicks: false,
-  //   },
-  // });
-
-  const editForm = useForm<
-    z.input<typeof editSchema>,
-    any,
-    z.output<typeof editSchema>
-  >({
+  const editForm = useForm<EditUrlForm>({
     resolver: zodResolver(editSchema),
-
     defaultValues: {
       originalUrl: "",
-
       title: "",
-
       isActive: true,
-
       resetClicks: false,
     },
   });
@@ -131,10 +94,6 @@ export default function UrlManagementPage() {
 
       const createdOriginalUrl = form.getValues("originalUrl");
 
-      // ✅ Fix: reset() with keepErrors: false clears all field errors cleanly.
-      // Previously, selective clearErrors() calls after reset() left originalUrl
-      // in a touched+validated state, causing "Enter a valid URL" to fire
-      // immediately when the user started typing a new URL.
       form.reset(
         { originalUrl: createdOriginalUrl, title: "", customCode: "" },
         { keepErrors: false },
@@ -198,7 +157,8 @@ export default function UrlManagementPage() {
           className="mt-5 space-y-4"
           onSubmit={form.handleSubmit((data) => {
             const payload = {
-              originalUrl: data.originalUrl,
+              // ✅ normalizeUrlInput called here instead of z.preprocess
+              originalUrl: normalizeUrlInput(data.originalUrl),
               ...(data.title?.trim() ? { title: data.title.trim() } : {}),
               ...(data.customCode?.trim()
                 ? { customCode: data.customCode.trim() }
@@ -337,7 +297,8 @@ export default function UrlManagementPage() {
             onSubmit={editForm.handleSubmit((values) =>
               updateMutation.mutate({
                 id: editingUrl.id,
-                originalUrl: values.originalUrl,
+                // ✅ normalizeUrlInput called here instead of z.preprocess
+                originalUrl: normalizeUrlInput(values.originalUrl),
                 ...(values.title?.trim() ? { title: values.title.trim() } : {}),
                 isActive: values.isActive,
                 resetClicks: values.resetClicks,
