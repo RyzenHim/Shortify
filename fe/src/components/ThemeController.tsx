@@ -28,6 +28,12 @@ export function ThemeController() {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.accent = accentColor;
     document.documentElement.style.colorScheme = theme;
+
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [accentColor, theme]);
 
   return null;

@@ -16,7 +16,7 @@ export interface UpdateUrlInput {
 }
 
 export async function getUrls() {
-  const { data } = await api.get<ApiResponse<PaginatedUrls>>("/urls");
+  const { data } = await api.get<ApiResponse<PaginatedUrls>>("/urls?limit=1000");
   return data.data;
 }
 

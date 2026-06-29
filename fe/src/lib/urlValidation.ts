@@ -15,5 +15,5 @@ export function normalizeUrlInput(value: string) {
 
 export const destinationUrlField = z
   .string()
-  .min(1, "Enter a valid URL")
-  .url("Enter a valid URL");
+  .transform((val) => normalizeUrlInput(val))
+  .pipe(z.string().min(1, "Enter a valid URL").url("Enter a valid URL"));

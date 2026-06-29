@@ -19,8 +19,12 @@ export class UrlsService {
   async create(ownerId: string, dto: CreateUrlDto) {
     const shortCode = dto.customCode ?? (await this.generateUniqueShortCode());
 
-    if (dto.customCode && (await this.urlModel.exists({ shortCode }))) {
-      throw new ConflictException('This short code is already in use');
+    // Custom alias should be globally unique
+    if (dto.customCode) {
+      const existing = await this.urlModel.findOne({ shortCode }).exec();
+      if (existing) {
+        throw new ConflictException(`The custom alias "${dto.customCode}" is already in use.`);
+      }
     }
 
     const url = await this.urlModel.create({
@@ -46,7 +50,7 @@ export class UrlsService {
 
   async findAllForUser(ownerId: string, page = 1, limit = 20) {
     const ownerObjectId = new Types.ObjectId(ownerId);
-    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const safeLimit = Math.min(Math.max(limit, 1), 1000);
     const skip = (Math.max(page, 1) - 1) * safeLimit;
     const [items, total] = await Promise.all([
       this.urlModel
@@ -73,11 +77,28 @@ export class UrlsService {
 
   async update(id: string, ownerId: string, dto: UpdateUrlDto) {
     const url = await this.findOwnedUrl(id, ownerId);
+
     const { resetClicks, ...updates } = dto;
+
+    // If update tries to change `shortCode` (custom alias), enforce:
+    // - alias must not exist on any other URL
+    // - if it belongs to this same URL, allow
+    if (typeof (updates as any).shortCode === 'string') {
+      const nextShortCode = (updates as any).shortCode;
+      const existing = await this.urlModel
+        .findOne({ shortCode: nextShortCode })
+        .exec();
+      if (existing && existing._id.toString() !== url._id.toString()) {
+        throw new ConflictException('This short code is already in use');
+      }
+    }
+
     Object.assign(url, updates);
+
     if (resetClicks) {
       url.clicks = 0;
     }
+
     await url.save();
     return this.toResponse(url);
   }
