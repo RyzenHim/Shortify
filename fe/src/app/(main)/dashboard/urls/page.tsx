@@ -55,10 +55,13 @@ export default function UrlManagementPage() {
       resetClicks: false,
     },
   });
-  const { data, isLoading } = useQuery({ queryKey: ["urls"], queryFn: getUrls });
+  const { data, isLoading } = useQuery({
+    queryKey: ["urls"],
+    queryFn: getUrls,
+  });
   const filteredUrls = useMemo(() => {
     const urls = data?.items ?? [];
-        return urls.filter((url) => {
+    return urls.filter((url) => {
       const text =
         `${url.title ?? ""} ${url.shortCode} ${url.originalUrl}`.toLowerCase();
       const matchesSearch = text.includes(query.toLowerCase());
@@ -88,14 +91,18 @@ export default function UrlManagementPage() {
           total: current.total + 1,
         };
       });
+
       const createdOriginalUrl = form.getValues("originalUrl");
-      form.reset({
-        originalUrl: createdOriginalUrl,
-        title: "",
-        customCode: "",
-      });
-      form.clearErrors("title");
-      form.clearErrors("customCode");
+
+      // ✅ Fix: reset() with keepErrors: false clears all field errors cleanly.
+      // Previously, selective clearErrors() calls after reset() left originalUrl
+      // in a touched+validated state, causing "Enter a valid URL" to fire
+      // immediately when the user started typing a new URL.
+      form.reset(
+        { originalUrl: createdOriginalUrl, title: "", customCode: "" },
+        { keepErrors: false },
+      );
+
       queryClient.invalidateQueries({ queryKey: ["urls"] });
       toast.success("Short URL created");
     },
@@ -223,51 +230,61 @@ export default function UrlManagementPage() {
                 <ListRowSkeleton key={index} />
               ))
             : filteredUrls.map((url) => (
-            <div key={url.id} className="grid gap-4 p-5 md:grid-cols-[1fr_auto] md:items-center">
-              <div className="min-w-0">
-                <p className="font-semibold">{url.title ?? url.shortCode}</p>
-                <p className="truncate text-sm text-[var(--accent)]">{url.shortUrl}</p>
-                <p className="truncate text-sm text-[var(--muted)]">{url.originalUrl}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  {url.clicks} clicks · {url.isActive ? "Active" : "Inactive"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    navigator.clipboard.writeText(url.shortUrl);
-                    toast.success("Copied");
-                  }}
-                  aria-label="Copy short URL"
+                <div
+                  key={url.id}
+                  className="grid gap-4 p-5 md:grid-cols-[1fr_auto] md:items-center"
                 >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setEditingUrl(url);
-                    editForm.reset({
-                      originalUrl: url.originalUrl,
-                      title: url.title ?? "",
-                      isActive: url.isActive,
-                      resetClicks: false,
-                    });
-                  }}
-                  aria-label="Edit URL"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={() => setDeletingUrl(url)}
-                  aria-label="Delete URL"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+                  <div className="min-w-0">
+                    <p className="font-semibold">
+                      {url.title ?? url.shortCode}
+                    </p>
+                    <p className="truncate text-sm text-[var(--accent)]">
+                      {url.shortUrl}
+                    </p>
+                    <p className="truncate text-sm text-[var(--muted)]">
+                      {url.originalUrl}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {url.clicks} clicks ·{" "}
+                      {url.isActive ? "Active" : "Inactive"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(url.shortUrl);
+                        toast.success("Copied");
+                      }}
+                      aria-label="Copy short URL"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setEditingUrl(url);
+                        editForm.reset({
+                          originalUrl: url.originalUrl,
+                          title: url.title ?? "",
+                          isActive: url.isActive,
+                          resetClicks: false,
+                        });
+                      }}
+                      aria-label="Edit URL"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => setDeletingUrl(url)}
+                      aria-label="Delete URL"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
           {!isLoading && !filteredUrls.length ? (
             <div className="p-10 text-center text-sm text-[var(--muted)]">
               No links match this view.
