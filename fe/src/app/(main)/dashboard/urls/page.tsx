@@ -42,16 +42,53 @@ export default function UrlManagementPage() {
   const [editingUrl, setEditingUrl] = useState<ShortUrl | null>(null);
   const [deletingUrl, setDeletingUrl] = useState<ShortUrl | null>(null);
   const queryClient = useQueryClient();
-  const form = useForm<UrlForm>({
+  // const form = useForm<UrlForm>({
+  //   resolver: zodResolver(schema),
+  //   defaultValues: { originalUrl: "", title: "", customCode: "" },
+  // });
+  // const form = useForm({
+  //   resolver: zodResolver(schema),
+  //   defaultValues: {
+  //     originalUrl: "",
+  //     title: "",
+  //     customCode: "",
+  //   },
+  // });
+  const form = useForm<z.input<typeof schema>, any, z.output<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: { originalUrl: "", title: "", customCode: "" },
-  });
-  const editForm = useForm<EditUrlForm>({
-    resolver: zodResolver(editSchema),
+
     defaultValues: {
       originalUrl: "",
+
       title: "",
+
+      customCode: "",
+    },
+  });
+  // const editForm = useForm({
+  //   resolver: zodResolver(editSchema),
+  //   defaultValues: {
+  //     originalUrl: "",
+  //     title: "",
+  //     isActive: true,
+  //     resetClicks: false,
+  //   },
+  // });
+
+  const editForm = useForm<
+    z.input<typeof editSchema>,
+    any,
+    z.output<typeof editSchema>
+  >({
+    resolver: zodResolver(editSchema),
+
+    defaultValues: {
+      originalUrl: "",
+
+      title: "",
+
       isActive: true,
+
       resetClicks: false,
     },
   });
