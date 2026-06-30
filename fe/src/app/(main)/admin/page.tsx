@@ -22,6 +22,32 @@ import { api, getApiMessage } from "@/lib/api";
 import type { ApiResponse, User } from "@/lib/types";
 import { ListRowSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
 import { clsx } from "clsx";
+import { useAppSelector } from "@/store/hooks";
+import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+
+// ---------------------------------------------------------------------------
+// Admin gate (UI-only)
+// ---------------------------------------------------------------------------
+function AdminGate({ children }: { children: React.ReactNode }) {
+  const user = useAppSelector((s) => s.auth.user);
+  if (user?.role !== "admin") {
+    return (
+      <div className="mx-auto w-full max-w-xl rounded-lg border border-[var(--line)] bg-[var(--panel)] p-6">
+        <h2 className="text-xl font-bold">No admin access</h2>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          You don’t have permission to view this page.
+        </p>
+        <div className="mt-5">
+          <Link href="/dashboard" className="block">
+            <Button className="w-full">Go to your dashboard</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -390,428 +416,434 @@ export default function AdminPage() {
 
   return (
     <ProtectedRoute>
-      <DashboardShell>
-        <div className="space-y-6">
-          {/* ---- Page header ---- */}
-          <div>
-            <div className="mb-1 flex items-center gap-2">
-              <Shield className="h-4 w-4 text-[var(--accent)]" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
-                Admin
-              </span>
+      <AdminGate>
+        <DashboardShell>
+          <div className="space-y-6">
+            {/* ---- Page header ---- */}
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-[var(--accent)]" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)]">
+                  Admin
+                </span>
+              </div>
+              <h1 className="text-2xl font-bold">Control panel</h1>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Manage users, review links, and remove abusive content.
+              </p>
             </div>
-            <h1 className="text-2xl font-bold">Control panel</h1>
-            <p className="mt-1 text-sm text-[var(--muted)]">
-              Manage users, review links, and remove abusive content.
-            </p>
-          </div>
 
-          {/* ---- Stat cards — always visible ---- */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {urlLoading || userLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <StatCardSkeleton key={i} />
-              ))
-            ) : (
-              <>
-                <StatCard
-                  icon={Link2}
-                  label="Total URLs"
-                  value={urlData?.total ?? 0}
-                  sub={`${guestCount} from guests`}
-                />
-                <StatCard
-                  icon={Globe}
-                  label="Guest URLs"
-                  value={guestCount}
-                  sub="Not tied to any account"
-                />
-                <StatCard
-                  icon={Users}
-                  label="Registered users"
-                  value={userData?.total ?? 0}
-                  sub={`${activeCount} active · ${disabledCount} disabled`}
-                />
-              </>
-            )}
-          </div>
+            {/* ---- Stat cards — always visible ---- */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              {urlLoading || userLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <StatCardSkeleton key={i} />
+                ))
+              ) : (
+                <>
+                  <StatCard
+                    icon={Link2}
+                    label="Total URLs"
+                    value={urlData?.total ?? 0}
+                    sub={`${guestCount} from guests`}
+                  />
+                  <StatCard
+                    icon={Globe}
+                    label="Guest URLs"
+                    value={guestCount}
+                    sub="Not tied to any account"
+                  />
+                  <StatCard
+                    icon={Users}
+                    label="Registered users"
+                    value={userData?.total ?? 0}
+                    sub={`${activeCount} active · ${disabledCount} disabled`}
+                  />
+                </>
+              )}
+            </div>
 
-          {/* ---- Main tab switcher ---- */}
-          <div className="flex items-center gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1 w-fit">
-            <TabPill
-              active={mainTab === "urls"}
-              onClick={() => setMainTab("urls")}
-              count={urlData?.total}
-            >
-              <Link2 className="h-3.5 w-3.5" />
-              Links
-            </TabPill>
-            <TabPill
-              active={mainTab === "users"}
-              onClick={() => setMainTab("users")}
-              count={userData?.total}
-            >
-              <Users className="h-3.5 w-3.5" />
-              Users
-            </TabPill>
-          </div>
+            {/* ---- Main tab switcher ---- */}
+            <div className="flex items-center gap-1 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-1 w-fit">
+              <TabPill
+                active={mainTab === "urls"}
+                onClick={() => setMainTab("urls")}
+                count={urlData?.total}
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                Links
+              </TabPill>
+              <TabPill
+                active={mainTab === "users"}
+                onClick={() => setMainTab("users")}
+                count={userData?.total}
+              >
+                <Users className="h-3.5 w-3.5" />
+                Users
+              </TabPill>
+            </div>
 
-          {/* ================================================================
+            {/* ================================================================
               URL PANEL
           ================================================================ */}
-          {mainTab === "urls" && (
-            <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-              {/* Command bar */}
-              <div className="flex flex-col gap-3 border-b border-[var(--line)] p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold">All links</p>
-                  <p className="text-xs text-[var(--muted)]">
-                    {urlLoading
-                      ? "Loading…"
-                      : urlSearch
-                        ? `${filteredUrls.length} of ${urlData?.total ?? 0} match`
-                        : `${urlData?.total ?? 0} total`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="relative sm:w-64">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted)]" />
-                    <input
-                      value={urlSearch}
-                      onChange={(e) => {
-                        setUrlSearch(e.target.value);
-                        setUrlPage(1);
-                      }}
-                      placeholder="Short code, URL, or owner"
-                      className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--background)] pl-9 pr-3 text-sm outline-none focus:border-[var(--accent)]"
-                    />
-                  </label>
-                  {isUrlFiltered && (
-                    <button
-                      onClick={resetUrlFilters}
-                      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-xs font-medium text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      Reset
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="divide-y divide-[var(--line)]">
-                {urlLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <ListRowSkeleton key={i} />
-                  ))
-                ) : pagedUrls.length === 0 ? (
-                  <div className="p-10 text-center text-sm text-[var(--muted)]">
-                    {urlSearch
-                      ? "No links match that search."
-                      : "No links yet."}
-                  </div>
-                ) : (
-                  pagedUrls.map((url) => (
-                    <div key={url._id} className="space-y-3 p-5">
-                      <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-mono text-sm font-semibold">
-                              {url.shortCode}
-                            </p>
-                            {url.isGuest && (
-                              <Badge variant="guest">Guest</Badge>
-                            )}
-                          </div>
-                          <p className="mt-1 truncate text-sm text-[var(--muted)]">
-                            {url.originalUrl}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--muted)]">
-                            {url.owner?.email ? (
-                              <>
-                                Owner:{" "}
-                                <span className="text-[var(--foreground)]">
-                                  {url.owner.email}
-                                </span>
-                              </>
-                            ) : (
-                              <span className="italic">No account</span>
-                            )}
-                            <span className="mx-2 opacity-40">·</span>
-                            <span className="tabular-nums">
-                              {url.clicks} click{url.clicks !== 1 ? "s" : ""}
-                            </span>
-                          </p>
-                        </div>
-                        {confirmDeleteId !== url._id && (
-                          <button
-                            onClick={() => setConfirmDeleteId(url._id)}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--muted)] hover:border-rose-300 hover:bg-rose-50 hover:text-rose-500 dark:hover:border-rose-700 dark:hover:bg-rose-950/40"
-                            aria-label="Delete URL"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      {confirmDeleteId === url._id && (
-                        <ConfirmRow
-                          message="Permanently delete this link?"
-                          confirmLabel="Delete"
-                          onConfirm={() => deleteMutation.mutate(url._id)}
-                          onCancel={() => setConfirmDeleteId(null)}
-                          isPending={deleteMutation.isPending}
-                          variant="danger"
-                        />
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <Pagination
-                page={urlPage}
-                totalPages={urlTotalPages}
-                total={filteredUrls.length}
-                pageSize={URL_PAGE_SIZE}
-                onChange={setUrlPage}
-              />
-            </section>
-          )}
-
-          {/* ================================================================
-              USER PANEL
-          ================================================================ */}
-          {mainTab === "users" && (
-            <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
-              {/* Command bar with sub-tabs + role filter */}
-              <div className="space-y-3 border-b border-[var(--line)] p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {mainTab === "urls" && (
+              <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                {/* Command bar */}
+                <div className="flex flex-col gap-3 border-b border-[var(--line)] p-5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-semibold">User accounts</p>
+                    <p className="font-semibold">All links</p>
                     <p className="text-xs text-[var(--muted)]">
-                      {userLoading
+                      {urlLoading
                         ? "Loading…"
-                        : `${filteredUsers.length} of ${userData?.total ?? 0} shown`}
+                        : urlSearch
+                          ? `${filteredUrls.length} of ${urlData?.total ?? 0} match`
+                          : `${urlData?.total ?? 0} total`}
                     </p>
                   </div>
-                  {isUserFiltered && (
-                    <button
-                      onClick={resetUserFilters}
-                      className="inline-flex h-8 w-fit items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-xs font-medium text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                      Reset filters
-                    </button>
-                  )}
-                </div>
-
-                {/* Status sub-tabs */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--background)] p-0.5">
-                    {(
-                      [
-                        { value: "all", label: "All", count: allUsers.length },
-                        {
-                          value: "active",
-                          label: "Active",
-                          count: activeCount,
-                        },
-                        {
-                          value: "disabled",
-                          label: "Disabled",
-                          count: disabledCount,
-                        },
-                      ] as {
-                        value: UserStatusTab;
-                        label: string;
-                        count: number;
-                      }[]
-                    ).map(({ value, label, count }) => (
-                      <button
-                        key={value}
-                        onClick={() => setUserStatusTabAndReset(value)}
-                        className={clsx(
-                          "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                          userStatusTab === value
-                            ? "bg-[var(--panel)] text-[var(--foreground)] shadow-sm"
-                            : "text-[var(--muted)] hover:text-[var(--foreground)]",
-                        )}
-                      >
-                        {label}
-                        <span
-                          className={clsx(
-                            "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
-                            userStatusTab === value
-                              ? "bg-[var(--line)] text-[var(--foreground)]"
-                              : "text-[var(--muted)]",
-                          )}
-                        >
-                          {count}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Role filter pills */}
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-                      Role
-                    </span>
-                    {(
-                      [
-                        { value: "all", label: "All" },
-                        { value: "admin", label: "Admin", count: adminCount },
-                        { value: "user", label: "User", count: userCount },
-                      ] as {
-                        value: RoleFilter;
-                        label: string;
-                        count?: number;
-                      }[]
-                    ).map(({ value, label, count }) => (
-                      <button
-                        key={value}
-                        onClick={() => setRoleFilterAndReset(value)}
-                        className={clsx(
-                          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-                          roleFilter === value
-                            ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
-                            : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)]",
-                        )}
-                      >
-                        {label}
-                        {count !== undefined && (
-                          <span className="tabular-nums opacity-70">
-                            {count}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* User rows */}
-              <div className="divide-y divide-[var(--line)]">
-                {userLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <ListRowSkeleton key={i} />
-                  ))
-                ) : pagedUsers.length === 0 ? (
-                  <div className="p-10 text-center">
-                    <p className="text-sm text-[var(--muted)]">
-                      {userStatusTab !== "all" || roleFilter !== "all"
-                        ? "No users match the current filters."
-                        : "No users yet."}
-                    </p>
-                    {(userStatusTab !== "all" || roleFilter !== "all") && (
-                      <button
-                        onClick={() => {
-                          setUserStatusTab("all");
-                          setRoleFilter("all");
-                          setUserPage(1);
+                  <div className="flex items-center gap-2">
+                    <label className="relative sm:w-64">
+                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--muted)]" />
+                      <input
+                        value={urlSearch}
+                        onChange={(e) => {
+                          setUrlSearch(e.target.value);
+                          setUrlPage(1);
                         }}
-                        className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                        placeholder="Short code, URL, or owner"
+                        className="h-9 w-full rounded-lg border border-[var(--line)] bg-[var(--background)] pl-9 pr-3 text-sm outline-none focus:border-[var(--accent)]"
+                      />
+                    </label>
+                    {isUrlFiltered && (
+                      <button
+                        onClick={resetUrlFilters}
+                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-xs font-medium text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors"
                       >
-                        Clear filters
+                        <X className="h-3.5 w-3.5" />
+                        Reset
                       </button>
                     )}
                   </div>
-                ) : (
-                  pagedUsers.map((user) => {
-                    const isActive = user.isActive !== false;
-                    const isConfirming = confirmToggleId === user.id;
-                    return (
-                      <div key={user.id} className="space-y-3 p-5">
-                        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10 text-[11px] font-bold uppercase text-[var(--accent)]">
-                              {(user.name ?? user.email ?? "?").slice(0, 2)}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="font-semibold">
-                                  {user.name ?? "—"}
-                                </p>
-                                <Badge
-                                  variant={
-                                    user.role === "admin" ? "admin" : "user"
-                                  }
-                                >
-                                  {user.role}
-                                </Badge>
-                                <Badge
-                                  variant={isActive ? "active" : "inactive"}
-                                >
-                                  {isActive ? "Active" : "Disabled"}
-                                </Badge>
-                              </div>
-                              <p className="mt-0.5 truncate text-sm text-[var(--muted)]">
-                                {user.email}
-                              </p>
-                            </div>
-                          </div>
+                </div>
 
-                          {!isConfirming && (
-                            <button
-                              onClick={() => setConfirmToggleId(user.id)}
-                              disabled={user.role === "admin"}
-                              className={clsx(
-                                "inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                                isActive
-                                  ? "border-[var(--line)] text-[var(--muted)] hover:border-rose-300 hover:bg-rose-50 hover:text-rose-500 dark:hover:border-rose-700 dark:hover:bg-rose-950/40"
-                                  : "border-[var(--line)] text-[var(--muted)] hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/40",
+                <div className="divide-y divide-[var(--line)]">
+                  {urlLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <ListRowSkeleton key={i} />
+                    ))
+                  ) : pagedUrls.length === 0 ? (
+                    <div className="p-10 text-center text-sm text-[var(--muted)]">
+                      {urlSearch
+                        ? "No links match that search."
+                        : "No links yet."}
+                    </div>
+                  ) : (
+                    pagedUrls.map((url) => (
+                      <div key={url._id} className="space-y-3 p-5">
+                        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-start">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-mono text-sm font-semibold">
+                                {url.shortCode}
+                              </p>
+                              {url.isGuest && (
+                                <Badge variant="guest">Guest</Badge>
                               )}
-                            >
-                              {isActive ? (
+                            </div>
+                            <p className="mt-1 truncate text-sm text-[var(--muted)]">
+                              {url.originalUrl}
+                            </p>
+                            <p className="mt-1 text-xs text-[var(--muted)]">
+                              {url.owner?.email ? (
                                 <>
-                                  <UserX className="h-3.5 w-3.5" /> Disable
+                                  Owner:{" "}
+                                  <span className="text-[var(--foreground)]">
+                                    {url.owner.email}
+                                  </span>
                                 </>
                               ) : (
-                                <>
-                                  <UserCheck className="h-3.5 w-3.5" /> Enable
-                                </>
+                                <span className="italic">No account</span>
                               )}
+                              <span className="mx-2 opacity-40">·</span>
+                              <span className="tabular-nums">
+                                {url.clicks} click{url.clicks !== 1 ? "s" : ""}
+                              </span>
+                            </p>
+                          </div>
+                          {confirmDeleteId !== url._id && (
+                            <button
+                              onClick={() => setConfirmDeleteId(url._id)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--muted)] hover:border-rose-300 hover:bg-rose-50 hover:text-rose-500 dark:hover:border-rose-700 dark:hover:bg-rose-950/40"
+                              aria-label="Delete URL"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           )}
                         </div>
-
-                        {isConfirming && (
+                        {confirmDeleteId === url._id && (
                           <ConfirmRow
-                            message={
-                              isActive
-                                ? `Disable ${user.name ?? user.email}? They won't be able to log in.`
-                                : `Re-enable ${user.name ?? user.email}?`
-                            }
-                            confirmLabel={
-                              isActive ? "Disable user" : "Enable user"
-                            }
-                            onConfirm={() =>
-                              userStatusMutation.mutate({
-                                id: user.id,
-                                enabled: !isActive,
-                              })
-                            }
-                            onCancel={() => setConfirmToggleId(null)}
-                            isPending={userStatusMutation.isPending}
-                            variant={isActive ? "danger" : "warning"}
+                            message="Permanently delete this link?"
+                            confirmLabel="Delete"
+                            onConfirm={() => deleteMutation.mutate(url._id)}
+                            onCancel={() => setConfirmDeleteId(null)}
+                            isPending={deleteMutation.isPending}
+                            variant="danger"
                           />
                         )}
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
 
-              <Pagination
-                page={userPage}
-                totalPages={userTotalPages}
-                total={filteredUsers.length}
-                pageSize={USER_PAGE_SIZE}
-                onChange={setUserPage}
-              />
-            </section>
-          )}
-        </div>
-      </DashboardShell>
+                <Pagination
+                  page={urlPage}
+                  totalPages={urlTotalPages}
+                  total={filteredUrls.length}
+                  pageSize={URL_PAGE_SIZE}
+                  onChange={setUrlPage}
+                />
+              </section>
+            )}
+
+            {/* ================================================================
+              USER PANEL
+          ================================================================ */}
+            {mainTab === "users" && (
+              <section className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
+                {/* Command bar with sub-tabs + role filter */}
+                <div className="space-y-3 border-b border-[var(--line)] p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-semibold">User accounts</p>
+                      <p className="text-xs text-[var(--muted)]">
+                        {userLoading
+                          ? "Loading…"
+                          : `${filteredUsers.length} of ${userData?.total ?? 0} shown`}
+                      </p>
+                    </div>
+                    {isUserFiltered && (
+                      <button
+                        onClick={resetUserFilters}
+                        className="inline-flex h-8 w-fit items-center gap-1.5 rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 text-xs font-medium text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Reset filters
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Status sub-tabs */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--background)] p-0.5">
+                      {(
+                        [
+                          {
+                            value: "all",
+                            label: "All",
+                            count: allUsers.length,
+                          },
+                          {
+                            value: "active",
+                            label: "Active",
+                            count: activeCount,
+                          },
+                          {
+                            value: "disabled",
+                            label: "Disabled",
+                            count: disabledCount,
+                          },
+                        ] as {
+                          value: UserStatusTab;
+                          label: string;
+                          count: number;
+                        }[]
+                      ).map(({ value, label, count }) => (
+                        <button
+                          key={value}
+                          onClick={() => setUserStatusTabAndReset(value)}
+                          className={clsx(
+                            "inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                            userStatusTab === value
+                              ? "bg-[var(--panel)] text-[var(--foreground)] shadow-sm"
+                              : "text-[var(--muted)] hover:text-[var(--foreground)]",
+                          )}
+                        >
+                          {label}
+                          <span
+                            className={clsx(
+                              "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                              userStatusTab === value
+                                ? "bg-[var(--line)] text-[var(--foreground)]"
+                                : "text-[var(--muted)]",
+                            )}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Role filter pills */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                        Role
+                      </span>
+                      {(
+                        [
+                          { value: "all", label: "All" },
+                          { value: "admin", label: "Admin", count: adminCount },
+                          { value: "user", label: "User", count: userCount },
+                        ] as {
+                          value: RoleFilter;
+                          label: string;
+                          count?: number;
+                        }[]
+                      ).map(({ value, label, count }) => (
+                        <button
+                          key={value}
+                          onClick={() => setRoleFilterAndReset(value)}
+                          className={clsx(
+                            "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+                            roleFilter === value
+                              ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                              : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--foreground)] hover:text-[var(--foreground)]",
+                          )}
+                        >
+                          {label}
+                          {count !== undefined && (
+                            <span className="tabular-nums opacity-70">
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* User rows */}
+                <div className="divide-y divide-[var(--line)]">
+                  {userLoading ? (
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <ListRowSkeleton key={i} />
+                    ))
+                  ) : pagedUsers.length === 0 ? (
+                    <div className="p-10 text-center">
+                      <p className="text-sm text-[var(--muted)]">
+                        {userStatusTab !== "all" || roleFilter !== "all"
+                          ? "No users match the current filters."
+                          : "No users yet."}
+                      </p>
+                      {(userStatusTab !== "all" || roleFilter !== "all") && (
+                        <button
+                          onClick={() => {
+                            setUserStatusTab("all");
+                            setRoleFilter("all");
+                            setUserPage(1);
+                          }}
+                          className="mt-2 text-xs text-[var(--accent)] hover:underline"
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    pagedUsers.map((user) => {
+                      const isActive = user.isActive !== false;
+                      const isConfirming = confirmToggleId === user.id;
+                      return (
+                        <div key={user.id} className="space-y-3 p-5">
+                          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/10 text-[11px] font-bold uppercase text-[var(--accent)]">
+                                {(user.name ?? user.email ?? "?").slice(0, 2)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-semibold">
+                                    {user.name ?? "—"}
+                                  </p>
+                                  <Badge
+                                    variant={
+                                      user.role === "admin" ? "admin" : "user"
+                                    }
+                                  >
+                                    {user.role}
+                                  </Badge>
+                                  <Badge
+                                    variant={isActive ? "active" : "inactive"}
+                                  >
+                                    {isActive ? "Active" : "Disabled"}
+                                  </Badge>
+                                </div>
+                                <p className="mt-0.5 truncate text-sm text-[var(--muted)]">
+                                  {user.email}
+                                </p>
+                              </div>
+                            </div>
+
+                            {!isConfirming && (
+                              <button
+                                onClick={() => setConfirmToggleId(user.id)}
+                                disabled={user.role === "admin"}
+                                className={clsx(
+                                  "inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                                  isActive
+                                    ? "border-[var(--line)] text-[var(--muted)] hover:border-rose-300 hover:bg-rose-50 hover:text-rose-500 dark:hover:border-rose-700 dark:hover:bg-rose-950/40"
+                                    : "border-[var(--line)] text-[var(--muted)] hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/40",
+                                )}
+                              >
+                                {isActive ? (
+                                  <>
+                                    <UserX className="h-3.5 w-3.5" /> Disable
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="h-3.5 w-3.5" /> Enable
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+
+                          {isConfirming && (
+                            <ConfirmRow
+                              message={
+                                isActive
+                                  ? `Disable ${user.name ?? user.email}? They won't be able to log in.`
+                                  : `Re-enable ${user.name ?? user.email}?`
+                              }
+                              confirmLabel={
+                                isActive ? "Disable user" : "Enable user"
+                              }
+                              onConfirm={() =>
+                                userStatusMutation.mutate({
+                                  id: user.id,
+                                  enabled: !isActive,
+                                })
+                              }
+                              onCancel={() => setConfirmToggleId(null)}
+                              isPending={userStatusMutation.isPending}
+                              variant={isActive ? "danger" : "warning"}
+                            />
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <Pagination
+                  page={userPage}
+                  totalPages={userTotalPages}
+                  total={filteredUsers.length}
+                  pageSize={USER_PAGE_SIZE}
+                  onChange={setUserPage}
+                />
+              </section>
+            )}
+          </div>
+        </DashboardShell>
+      </AdminGate>
     </ProtectedRoute>
   );
 }
