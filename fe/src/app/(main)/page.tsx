@@ -157,6 +157,7 @@ export default function Home() {
               <ArrowRight className="h-4 w-4" />
             </a>
             <Link
+              prefetch={false}
               href="/auth/login"
               className="inline-flex h-11 items-center justify-center rounded-md border border-[var(--line)] px-5 text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5"
             >

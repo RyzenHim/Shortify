@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/Button";
 import { ListRowSkeleton, StatCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function DashBoardPage() {
-  const { data, isLoading } = useQuery({ queryKey: ["urls"], queryFn: getUrls });
+  const { data, isLoading } = useQuery({
+    queryKey: ["urls"],
+    queryFn: getUrls,
+  });
   const user = useAppSelector((state) => state.auth.user);
   const urls = data?.items ?? [];
   const totalClicks = urls.reduce((sum, url) => sum + url.clicks, 0);
@@ -28,6 +31,7 @@ export default function DashBoardPage() {
           </p>
         </div>
         <Link
+          prefetch={false}
           href="/dashboard/urls"
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
         >
@@ -73,6 +77,7 @@ export default function DashBoardPage() {
             </p>
           </div>
           <Link
+            prefetch={false}
             href="/dashboard/urls"
             className="text-sm font-semibold text-[var(--accent)] hover:text-[var(--accent-hover)]"
           >
@@ -85,26 +90,35 @@ export default function DashBoardPage() {
                 <ListRowSkeleton key={index} />
               ))
             : urls.slice(0, 5).map((url) => (
-            <div key={url.id} className="flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{url.title ?? url.shortCode}</p>
-                <p className="truncate text-sm text-[var(--muted)]">{url.originalUrl}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-[var(--muted)]">{url.clicks} clicks</span>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    navigator.clipboard.writeText(url.shortUrl);
-                    toast.success("Copied");
-                  }}
-                  aria-label="Copy short URL"
+                <div
+                  key={url.id}
+                  className="flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">
+                      {url.title ?? url.shortCode}
+                    </p>
+                    <p className="truncate text-sm text-[var(--muted)]">
+                      {url.originalUrl}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-[var(--muted)]">
+                      {url.clicks} clicks
+                    </span>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        navigator.clipboard.writeText(url.shortUrl);
+                        toast.success("Copied");
+                      }}
+                      aria-label="Copy short URL"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
           {!isLoading && urls.length === 0 ? (
             <div className="p-8 text-center text-sm text-[var(--muted)]">
               No URLs yet. Create your first short link from URL Management.
