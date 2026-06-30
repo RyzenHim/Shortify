@@ -292,9 +292,11 @@ export default function UrlManagementPage() {
             error={form.formState.errors.originalUrl?.message}
             hint="Paste a full link — http:// and https:// are both fine."
             inputProps={{
-              type: "url",
+              type: "text",
+              inputMode: "url",
               placeholder: "https://example.com/very-long-path",
               autoComplete: "url",
+              spellCheck: false,
               ...form.register("originalUrl"),
             }}
           />
@@ -619,8 +621,10 @@ export default function UrlManagementPage() {
                 error={editForm.formState.errors.originalUrl?.message}
                 hint="Full URL including https://"
                 inputProps={{
-                  type: "url",
+                  type: "text",
+                  inputMode: "url",
                   autoComplete: "url",
+                  spellCheck: false,
                   ...editForm.register("originalUrl"),
                 }}
               />

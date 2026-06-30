@@ -16,17 +16,18 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { createGuestUrl, createUrl } from "@/features/urls/urlApi";
 import { getApiMessage } from "@/lib/api";
 import type { PaginatedUrls, ShortUrl } from "@/lib/types";
-import { normalizeUrlInput } from "@/lib/urlValidation";
+import { validateUrlStrict } from "@/lib/urlValidation";
 import { useAppSelector } from "@/store/hooks";
+import { clsx } from "clsx";
 
 export default function Home() {
   const [link, setLink] = useState("");
-  const [shortUrl, setShortUrl] = useState<ShortUrl | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [shortUrl, setShortUrl] = useState<ShortUrl | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -34,43 +35,46 @@ export default function Home() {
       const error = params.get("error");
       if (error === "inactive") {
         toast.error("This short URL has been deactivated by its owner.");
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
       } else if (error === "notfound") {
         toast.error("The short URL was not found.");
-        window.history.replaceState({}, document.title, window.location.pathname);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname,
+        );
       }
     }
   }, []);
+
   const queryClient = useQueryClient();
   const accessToken = useAppSelector((state) => state.auth.accessToken);
+
+  function isAuthed() {
+    return (
+      accessToken ||
+      (typeof window !== "undefined" &&
+        Boolean(localStorage.getItem("shortify.accessToken")))
+    );
+  }
+
   const mutation = useMutation({
     mutationFn: async (input: { originalUrl: string }) => {
-      const isAuthenticated =
-        accessToken ||
-        (typeof window !== "undefined" &&
-          Boolean(localStorage.getItem("shortify.accessToken")));
-
-      return isAuthenticated ? createUrl(input) : createGuestUrl(input);
+      return isAuthed() ? createUrl(input) : createGuestUrl(input);
     },
     onSuccess: (url) => {
       setShortUrl(url);
       setLinkError(null);
-      const isAuthenticated =
-        accessToken ||
-        (typeof window !== "undefined" &&
-          Boolean(localStorage.getItem("shortify.accessToken")));
 
-      if (isAuthenticated) {
+      if (isAuthed()) {
         queryClient.setQueryData<PaginatedUrls>(["urls"], (current) => {
           if (!current) {
-            return {
-              items: [url],
-              page: 1,
-              limit: 20,
-              total: 1,
-            };
+            return { items: [url], page: 1, limit: 20, total: 1 };
           }
-
           return {
             ...current,
             items: [url, ...current.items],
@@ -79,16 +83,51 @@ export default function Home() {
         });
         queryClient.invalidateQueries({ queryKey: ["urls"] });
       }
-      toast.success(
-        accessToken ||
-          (typeof window !== "undefined" &&
-            localStorage.getItem("shortify.accessToken"))
-          ? "Short URL created"
-          : "Short URL ready",
-      );
+      toast.success(isAuthed() ? "Short URL created" : "Short URL ready");
     },
     onError: (error) => toast.error(getApiMessage(error)),
   });
+
+  // Live validation as the person types, after their first interaction —
+  // mirrors the dashboard forms so the rules feel consistent everywhere.
+  function handleChange(value: string) {
+    setLink(value);
+    if (!hasInteracted) return;
+    if (!value.trim()) {
+      setLinkError(null);
+      return;
+    }
+    const result = validateUrlStrict(value);
+    setLinkError(result.ok ? null : result.message);
+  }
+
+  function handleBlur() {
+    setHasInteracted(true);
+    if (!link.trim()) {
+      setLinkError(null);
+      return;
+    }
+    const result = validateUrlStrict(link);
+    setLinkError(result.ok ? null : result.message);
+  }
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setHasInteracted(true);
+
+    // Always re-validate synchronously on submit — never trust a debounce
+    // or a stale error state to be the last word before hitting the API.
+    const result = validateUrlStrict(link);
+    if (!result.ok) {
+      setLinkError(result.message);
+      return;
+    }
+
+    setLinkError(null);
+    mutation.mutate({ originalUrl: result.url });
+  }
+
+  const isValid = hasInteracted && link.trim() !== "" && !linkError;
 
   return (
     <main className="overflow-hidden">
@@ -105,8 +144,8 @@ export default function Home() {
             Shortify
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-[var(--muted)]">
-            Paste any long URL and get a short link instantly. Create an
-            account when you are ready to save links, manage aliases, and track
+            Paste any long URL and get a short link instantly. Create an account
+            when you are ready to save links, manage aliases, and track
             performance.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -142,35 +181,39 @@ export default function Home() {
             </div>
             <Link2 className="h-5 w-5 text-[var(--accent)]" />
           </div>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const normalizedUrl = normalizeUrlInput(link);
 
-              try {
-                new URL(normalizedUrl);
-              } catch {
-                setLinkError("Enter a valid URL");
-                return;
-              }
+          <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium leading-none">
+                Destination URL
+              </label>
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                spellCheck={false}
+                value={link}
+                onChange={(event) => handleChange(event.target.value)}
+                onBlur={handleBlur}
+                placeholder="https://example.com/a/very/long/url"
+                className={clsx(
+                  "h-10 w-full rounded-md border bg-[var(--background)] px-3 text-sm outline-none transition-colors",
+                  linkError
+                    ? "border-rose-400 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20"
+                    : isValid
+                      ? "border-emerald-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                      : "border-[var(--line)] focus:border-[var(--accent)]",
+                )}
+              />
+              {linkError ? (
+                <p className="text-xs text-rose-500">{linkError}</p>
+              ) : (
+                <p className="text-xs text-[var(--muted)]">
+                  Paste a full link — http:// and https:// are both fine.
+                </p>
+              )}
+            </div>
 
-              setLinkError(null);
-              mutation.mutate({ originalUrl: normalizedUrl });
-            }}
-          >
-            <Input
-              label="Destination URL"
-              value={link}
-              onChange={(event) => {
-                setLink(event.target.value);
-                if (linkError) {
-                  setLinkError(null);
-                }
-              }}
-              placeholder="https://example.com/a/very/long/url"
-              error={linkError ?? undefined}
-            />
             <Button className="w-full" disabled={mutation.isPending}>
               {mutation.isPending ? "Shortening..." : "Shorten URL"}
             </Button>
