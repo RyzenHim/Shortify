@@ -3,7 +3,7 @@
 import { hydrateSession } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProtectedRoute({
   children,
@@ -29,7 +29,23 @@ export default function ProtectedRoute({
     }
   }, [token, router]);
 
-  if (!token && typeof window !== "undefined" && !localStorage.getItem("shortify.accessToken")) {
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  useEffect(() => {
+    // Mark hydration complete after the first client paint so we don't
+    // render the dashboard shell while redirecting.
+    setIsHydrating(false);
+  }, []);
+
+  if (isHydrating) {
+    return null;
+  }
+
+  if (
+    !token &&
+    typeof window !== "undefined" &&
+    !localStorage.getItem("shortify.accessToken")
+  ) {
     return null;
   }
 
