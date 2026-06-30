@@ -73,6 +73,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               const active = pathname === item.href;
               return (
                 <Link
+                  prefetch={false}
                   key={item.href}
                   href={item.href}
                   title={item.label}
@@ -117,12 +118,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden">
             {nav
-              .filter((item) => item.href !== "/admin" || user?.role === "admin")
+              .filter(
+                (item) => item.href !== "/admin" || user?.role === "admin",
+              )
               .map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
                 return (
                   <Link
+                    prefetch={false}
                     key={item.href}
                     href={item.href}
                     className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium ${
