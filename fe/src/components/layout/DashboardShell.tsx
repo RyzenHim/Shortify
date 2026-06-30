@@ -41,6 +41,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       >
         <div className="mb-8 flex items-center justify-between gap-2">
           <Link
+            prefetch={false}
             href="/"
             className="flex min-w-0 items-center gap-2 text-xl font-bold"
             aria-label="Shortify home"
