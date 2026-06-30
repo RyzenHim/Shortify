@@ -16,6 +16,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2">
           <Link
+            prefetch={false}
             href="/dashboard"
             className="hidden h-10 items-center gap-2 rounded-md px-3 text-sm font-medium text-[var(--muted)] hover:bg-black/5 hover:text-[var(--foreground)] dark:hover:bg-white/5 sm:flex"
           >
@@ -24,6 +25,7 @@ export default function Navbar() {
           </Link>
 
           <Link
+            prefetch={false}
             href="/auth/login"
             className="inline-flex h-10 items-center gap-2 rounded-md bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)]"
           >

@@ -69,11 +69,7 @@ export default function RegisterPage() {
           {...form.register("password")}
         />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={mutation.isPending}
-        >
+        <Button type="submit" className="w-full" disabled={mutation.isPending}>
           {mutation.isPending ? "Creating..." : "Create Account"}
         </Button>
       </form>
@@ -81,6 +77,7 @@ export default function RegisterPage() {
       <p className="mt-4 text-center text-sm text-[var(--muted)]">
         Already have an account?{" "}
         <Link
+          prefetch={false}
           href="/auth/login"
           className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
         >

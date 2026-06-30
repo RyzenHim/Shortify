@@ -39,7 +39,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
           You don’t have permission to view this page.
         </p>
         <div className="mt-5">
-          <Link href="/dashboard" className="block">
+          <Link prefetch={false} href="/dashboard" className="block">
             <Button className="w-full">Go to your dashboard</Button>
           </Link>
         </div>

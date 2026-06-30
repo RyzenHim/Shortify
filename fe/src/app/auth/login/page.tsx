@@ -51,7 +51,10 @@ export default function LoginPage() {
         Login to continue using Shortify.
       </p>
 
-      <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit((data) => mutation.mutate(data))}
+        className="space-y-4"
+      >
         <Input
           label="Email"
           type="email"
@@ -63,6 +66,7 @@ export default function LoginPage() {
           <div className="mb-1 flex items-center justify-between">
             <span className="text-sm font-medium">Password</span>
             <Link
+              prefetch={false}
               href="/auth/forgot-password"
               className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)]"
             >
@@ -78,11 +82,7 @@ export default function LoginPage() {
           />
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={mutation.isPending}
-        >
+        <Button type="submit" className="w-full" disabled={mutation.isPending}>
           {mutation.isPending ? "Signing in..." : "Login"}
         </Button>
       </form>
@@ -90,6 +90,7 @@ export default function LoginPage() {
       <p className="mt-4 text-center text-sm text-[var(--muted)]">
         Don&apos;t have an account?{" "}
         <Link
+          prefetch={false}
           href="/auth/register"
           className="font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]"
         >

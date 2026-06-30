@@ -23,13 +23,17 @@ export default function AuthLayout({
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)] px-4 py-8">
       <div className="grid w-full max-w-6xl overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--panel)] shadow-2xl md:grid-cols-2">
         <div className="hidden flex-col justify-center border-r border-[var(--line)] p-12 md:flex">
-          <Link href="/" className="mb-6 inline-flex text-4xl font-bold">
+          <Link
+            prefetch={false}
+            href="/"
+            className="mb-6 inline-flex text-4xl font-bold"
+          >
             Shortify
           </Link>
 
           <p className="text-lg leading-relaxed text-[var(--muted)]">
-            You can shorten a URL without signing in. Create an account when
-            you want a persistent workspace for the links that matter.
+            You can shorten a URL without signing in. Create an account when you
+            want a persistent workspace for the links that matter.
           </p>
 
           <div className="mt-10 grid gap-3">
@@ -58,6 +62,7 @@ export default function AuthLayout({
 
             <div className="rounded-lg border border-[var(--line)] p-6">
               <Link
+                prefetch={false}
                 href="/"
                 className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-[var(--muted)] hover:text-[var(--foreground)]"
               >
