@@ -389,8 +389,8 @@ export const customCodeField = z
         "Alias must be at least 4 characters",
       )
       .refine(
-        (val) => val === "" || val.length <= 50,
-        "Alias must be 50 characters or fewer",
+        (val) => val === "" || val.length <= 32,
+        "Alias must be 32 characters or fewer",
       )
       .refine(
         (val) => val === "" || ALIAS_PATTERN.test(val),
