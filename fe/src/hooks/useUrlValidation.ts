@@ -8,16 +8,6 @@ export type UrlValidationState =
   | { status: "valid"; normalizedUrl: string }
   | { status: "invalid"; message: string };
 
-/**
- * Debounced, stateful URL validation for free-standing inputs (i.e. ones not
- * wired through react-hook-form + Zod, like the homepage's guest shortener).
- *
- * Delegates every actual validation decision to `validateUrlStrict` from
- * `@/lib/urlValidation` — the same function the Zod schemas use — so this
- * hook and the authenticated forms can never disagree on what counts as a
- * valid URL. There is exactly one validator in the codebase; this hook is
- * just a different way of driving it for inputs outside react-hook-form.
- */
 export function useUrlValidation(debounceMs = 350) {
   const [inputValue, setInputValue] = useState("");
   const [state, setState] = useState<UrlValidationState>({ status: "idle" });

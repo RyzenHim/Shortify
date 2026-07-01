@@ -13,6 +13,8 @@ export default function DashBoardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["urls"],
     queryFn: getUrls,
+    staleTime: 0,
+    refetchOnMount: true,
   });
   const user = useAppSelector((state) => state.auth.user);
   const urls = data?.items ?? [];
